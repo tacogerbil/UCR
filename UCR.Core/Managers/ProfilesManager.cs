@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,63 +7,13 @@ using System.Xml;
 using System.Xml.Serialization;
 using HidWizards.UCR.Core.Models;
 using HidWizards.UCR.Core.Models.Binding;
+using HidWizards.UCR.Core.Persistence;
 using NLog;
 
 namespace HidWizards.UCR.Core.Managers
 {
-    public enum ProfileExportKind
-    {
-        Profile,
-        ProfileList
-    }
 
-    public enum ProfileListImportMode
-    {
-        Merge,
-        Replace
-    }
 
-    [XmlRoot("UcrExport")]
-    public class ProfileExportPackage
-    {
-        [XmlAttribute]
-        public int FormatVersion { get; set; }
-
-        [XmlAttribute]
-        public ProfileExportKind Kind { get; set; }
-
-        [XmlArray("Profiles")]
-        [XmlArrayItem("Profile")]
-        public List<Profile> Profiles { get; set; }
-
-        [XmlArray("DeviceAliases")]
-        [XmlArrayItem("DeviceAlias")]
-        public List<DeviceAlias> DeviceAliases { get; set; }
-
-        public ProfileExportPackage()
-        {
-            Profiles = new List<Profile>();
-            DeviceAliases = new List<DeviceAlias>();
-        }
-    }
-
-    [XmlRoot("Context")]
-    public class LegacyContextImportPackage
-    {
-        [XmlArray("Profiles")]
-        [XmlArrayItem("Profile")]
-        public List<Profile> Profiles { get; set; }
-
-        [XmlArray("DeviceAliases")]
-        [XmlArrayItem("DeviceAlias")]
-        public List<DeviceAlias> DeviceAliases { get; set; }
-
-        public LegacyContextImportPackage()
-        {
-            Profiles = new List<Profile>();
-            DeviceAliases = new List<DeviceAlias>();
-        }
-    }
 
     public class ProfilesManager
     {
