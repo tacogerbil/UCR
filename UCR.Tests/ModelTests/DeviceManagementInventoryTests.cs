@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using HidWizards.UCR.Core;
 using HidWizards.UCR.Core.Managers;
@@ -181,7 +181,7 @@ namespace HidWizards.UCR.Tests.ModelTests
                     "Healthy", () => healthyReport)
             };
 
-            var reports = DevicesManager.CollectProviderReports(probes,
+            var reports = HidWizards.UCR.Core.Adapters.DeviceProviderAdapter.CollectProviderReports(probes,
                 (providerName, exception) => errors.Add(providerName + ":" + exception.Message));
 
             Assert.That(reports.Count, Is.EqualTo(1));

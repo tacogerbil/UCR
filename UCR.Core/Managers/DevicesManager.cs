@@ -12,6 +12,7 @@ using HidWizards.UCR.Core.Models.Binding;
 using HidWizards.UCR.Core.Utilities;
 using NLog;
 using Logger = NLog.Logger;
+using HidWizards.UCR.Core.Services;
 
 namespace HidWizards.UCR.Core.Managers
 {
@@ -29,6 +30,7 @@ namespace HidWizards.UCR.Core.Managers
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
         private static readonly TimeSpan DeviceDetectionArmDelay = TimeSpan.FromMilliseconds(350);
         private readonly DeviceDetectionAdapter _deviceDetectionAdapter = new DeviceDetectionAdapter();
+        private readonly DeviceProviderAdapter _providerAdapter = new DeviceProviderAdapter();
 
 
         public DevicesManager(Context context)
@@ -46,8 +48,8 @@ namespace HidWizards.UCR.Core.Managers
         {
             var raw = GetRawAvailableDeviceList(type, includeCache);
             var result = CollapseLogicalDevicesForDisplay(raw, type);
-            ApplyAliases(result);
-            return SortDevices(result);
+            _context.DeviceAliasService.ApplyAliases(result);
+            return _context.DeviceAliasService.SortDevices(result);
         }
 
         /// <summary>
@@ -67,95 +69,23 @@ namespace HidWizards.UCR.Core.Managers
         private List<Device> GetCachedManagementInputInventory()
         {
             var result = CollapseLogicalDevicesForDisplay(_deviceCacheService.LoadAllProviders(), DeviceIoType.Input);
-            ApplyAliases(result);
-            return SortDevices(result);
+            _context.DeviceAliasService.ApplyAliases(result);
+            return _context.DeviceAliasService.SortDevices(result);
         }
 
         public bool HasLoadedProviderReports()
         {
             if (_context.IOController == null) return false;
 
-            var inputs = GetProviderReportsResilient(DeviceIoType.Input);
-            var outputs = GetProviderReportsResilient(DeviceIoType.Output);
+            var inputs = _providerAdapter.GetProviderReportsResilient(_context.IOController, DeviceIoType.Input);
+            var outputs = _providerAdapter.GetProviderReportsResilient(_context.IOController, DeviceIoType.Output);
             return inputs.Count > 0 || outputs.Count > 0;
-        }
-
-        private SortedDictionary<string, ProviderReport> GetProviderReportsResilient(DeviceIoType type)
-        {
-            if (_context.IOController == null) return new SortedDictionary<string, ProviderReport>();
-
-            try
-            {
-                // IOWrapper's aggregate GetInputList/GetOutputList calls every provider without isolating
-                // exceptions. One bad optional provider must not hide every healthy keyboard/controller.
-                // The pinned IOWrapper exposes its provider dictionary through this stable private field;
-                // CI's provider-composition smoke test already verifies the same field contract.
-                var providersField = _context.IOController.GetType().GetField(
-                    "_providers", BindingFlags.Instance | BindingFlags.NonPublic);
-                var providers = providersField?.GetValue(_context.IOController) as IDictionary<string, IProvider>;
-                if (providers == null)
-                {
-                    return type == DeviceIoType.Input
-                        ? _context.IOController.GetInputList()
-                        : _context.IOController.GetOutputList();
-                }
-
-                var probes = new List<KeyValuePair<string, Func<ProviderReport>>>();
-                foreach (var entry in providers)
-                {
-                    var providerName = entry.Key;
-                    var provider = entry.Value;
-                    if (provider == null || string.IsNullOrWhiteSpace(providerName)) continue;
-
-                    if (type == DeviceIoType.Input && provider is IInputProvider inputProvider)
-                    {
-                        probes.Add(new KeyValuePair<string, Func<ProviderReport>>(
-                            providerName, () => inputProvider.GetInputList()));
-                    }
-                    else if (type == DeviceIoType.Output && provider is IOutputProvider outputProvider)
-                    {
-                        probes.Add(new KeyValuePair<string, Func<ProviderReport>>(
-                            providerName, () => outputProvider.GetOutputList()));
-                    }
-                }
-
-                return CollectProviderReports(probes, (providerName, exception) =>
-                    Logger.Error(exception, "Unable to enumerate " + type + " devices from provider: " + providerName));
-            }
-            catch (Exception exception)
-            {
-                Logger.Error(exception, "Unable to enumerate IOWrapper providers individually");
-                return new SortedDictionary<string, ProviderReport>();
-            }
-        }
-
-        internal static SortedDictionary<string, ProviderReport> CollectProviderReports(
-            IEnumerable<KeyValuePair<string, Func<ProviderReport>>> probes,
-            Action<string, Exception> onProviderError = null)
-        {
-            var reports = new SortedDictionary<string, ProviderReport>(StringComparer.OrdinalIgnoreCase);
-            if (probes == null) return reports;
-
-            foreach (var probe in probes)
-            {
-                try
-                {
-                    var report = probe.Value?.Invoke();
-                    if (report != null && !string.IsNullOrWhiteSpace(probe.Key)) reports[probe.Key] = report;
-                }
-                catch (Exception exception)
-                {
-                    onProviderError?.Invoke(probe.Key, exception);
-                }
-            }
-
-            return reports;
         }
 
         private List<Device> GetRawAvailableDeviceList(DeviceIoType type, bool includeCache)
         {
             var result = new List<Device>();
-            var providerList = GetProviderReportsResilient(type);
+            var providerList = _providerAdapter.GetProviderReportsResilient(_context.IOController, type);
 
             foreach (var providerReport in providerList)
             {
@@ -374,46 +304,22 @@ namespace HidWizards.UCR.Core.Managers
             var devices = GetAvailableDeviceList(type, includeCache);
             return type == DeviceIoType.Input
                 ? devices.Where(device => !IsInputRemoved(device)).ToList()
-                : devices.Where(device => !IsInputRemoved(device) && !IsDeviceHidden(device, devices)).ToList();
+                : devices.Where(device => !IsInputRemoved(device) && !_context.DeviceAliasService.IsDeviceHidden(device, devices)).ToList();
         }
 
         public bool IsInputRemoved(Device device)
         {
-            return FindAlias(device)?.Removed ?? false;
+            return _context.DeviceAliasService.IsInputRemoved(device);
         }
 
         public bool RemoveInputDevice(Device device)
         {
-            if (device == null) return false;
-            if (_context.DeviceAliases == null) _context.DeviceAliases = new List<DeviceAlias>();
-            var identity = BuildAliasIdentity(device);
-            if (identity == null) return false;
-
-            var existing = _context.DeviceAliases.FirstOrDefault(candidate => AliasIdentityEquals(candidate, identity));
-            if (existing == null)
-            {
-                existing = identity;
-                _context.DeviceAliases.Add(existing);
-            }
-            if (existing.Removed) return true;
-
-            existing.Removed = true;
-            existing.Hidden = false;
-            _context.ContextChanged();
-            _context.OnDeviceAliasesChangedEvent();
-            return true;
+            return _context.DeviceAliasService.RemoveInputDevice(device);
         }
 
         public bool RestoreInputDevice(Device device)
         {
-            var existing = FindAlias(device);
-            if (existing == null || !existing.Removed) return false;
-
-            existing.Removed = false;
-            if (!existing.HasPresentationSettings) _context.DeviceAliases.Remove(existing);
-            _context.ContextChanged();
-            _context.OnDeviceAliasesChangedEvent();
-            return true;
+            return _context.DeviceAliasService.RestoreInputDevice(device);
         }
 
         /// <summary>
@@ -791,365 +697,69 @@ namespace HidWizards.UCR.Core.Managers
             return DeviceIdentity.PersistedEquals(left, right);
         }
 
-        #region Device aliases
-
-        public string GetDisplayTitle(Device device)
+        #region Device aliases (Delegated)
+        
+        public string GetDisplayTitle(Device device) => _context.DeviceAliasService.GetDisplayTitle(device);
+        public string GetDeviceAlias(Device device) => _context.DeviceAliasService.GetDeviceAlias(device);
+        public bool GetDeviceHidden(Device device) => _context.DeviceAliasService.GetDeviceHidden(device);
+        public int GetDeviceSortOrder(Device device) => _context.DeviceAliasService.GetDeviceSortOrder(device);
+        public DeviceOutlineColor GetDeviceOutlineColor(Device device) => _context.DeviceAliasService.GetDeviceOutlineColor(device);
+        
+        public bool CanPersistDeviceAlias(Device device, IEnumerable<Device> liveDevices)
         {
-            if (device == null) return string.Empty;
-            var alias = FindAlias(device);
-            return alias == null || string.IsNullOrWhiteSpace(alias.Alias) ? device.Title : alias.Alias;
-        }
-
-        public string GetDeviceAlias(Device device)
-        {
-            return FindAlias(device)?.Alias;
-        }
-
-        public bool GetDeviceHidden(Device device)
-        {
-            return FindAlias(device)?.Hidden ?? false;
-        }
-
-        public int GetDeviceSortOrder(Device device)
-        {
-            return FindAlias(device)?.SortOrder ?? int.MaxValue;
-        }
-
-        public DeviceOutlineColor GetDeviceOutlineColor(Device device)
-        {
-            return FindAlias(device)?.OutlineColor ?? DeviceOutlineColor.Default;
+            return _context.DeviceAliasService.CanPersistDeviceAlias(device, liveDevices);
         }
 
         public bool CanPersistDeviceAlias(Device device, DeviceIoType type)
         {
-            return CanPersistDeviceAlias(device, GetAvailableDeviceList(type, false));
+            return _context.DeviceAliasService.CanPersistDeviceAlias(device, GetAvailableDeviceList(type, false));
         }
 
-        public bool CanPersistDeviceAlias(Device device, IEnumerable<Device> liveDevices)
+        public bool TrySetDeviceAlias(Device device, IEnumerable<Device> liveDevices, string alias, out string error)
         {
-            if (device == null || string.IsNullOrWhiteSpace(device.ProviderName)) return false;
-            if (string.Equals(device.ProviderName, "Core_Interception", StringComparison.OrdinalIgnoreCase))
-                return !string.IsNullOrWhiteSpace(BuildLogicalDeviceKey(device));
-            if (!string.IsNullOrWhiteSpace(device.HidPath)) return true;
-            if (UsesLogicalSlotIdentity(device.ProviderName)) return !string.IsNullOrWhiteSpace(device.DeviceHandle);
-            if (string.IsNullOrWhiteSpace(device.DeviceHandle)) return false;
-            return CountHandleMatches(device, liveDevices) == 1;
+            return _context.DeviceAliasService.TrySetDeviceAlias(device, liveDevices, alias, out error);
         }
 
         public bool TrySetDeviceAlias(Device device, DeviceIoType type, string alias, out string error)
         {
-            error = null;
-            if (device == null)
-            {
-                error = "No device is selected.";
-                return false;
-            }
+            return _context.DeviceAliasService.TrySetDeviceAlias(device, GetAvailableDeviceList(type, false), alias, out error);
+        }
 
-            if (_context.DeviceAliases == null) _context.DeviceAliases = new List<DeviceAlias>();
-
-            var identity = BuildAliasIdentity(device);
-            if (identity == null)
-            {
-                error = "This device does not expose enough identity information for a persistent alias.";
-                return false;
-            }
-
-            var normalizedAlias = string.IsNullOrWhiteSpace(alias) ? null : alias.Trim();
-            var existing = _context.DeviceAliases.FirstOrDefault(candidate => AliasIdentityEquals(candidate, identity));
-
-            // Clearing a friendly name is always safe: it cannot make an ambiguous physical device
-            // claim a new identity. Preserve any independently stored hide/order preferences.
-            if (normalizedAlias == null)
-            {
-                if (existing == null)
-                {
-                    device.Alias = null;
-                    return true;
-                }
-
-                if (existing.Alias == null)
-                {
-                    device.Alias = null;
-                    return true;
-                }
-
-                existing.Alias = null;
-                device.Alias = null;
-                if (!existing.HasPresentationSettings) _context.DeviceAliases.Remove(existing);
-                _context.ContextChanged();
-                _context.OnDeviceAliasesChangedEvent();
-                return true;
-            }
-
-            if (!CanPersistDeviceAlias(device, type))
-            {
-                error = "UCR cannot safely persist an individual alias for this device because the provider does not expose a unique identity for it while identical devices are present.";
-                return false;
-            }
-
-            if (existing == null)
-            {
-                existing = identity;
-                _context.DeviceAliases.Add(existing);
-            }
-
-            if (string.Equals(existing.Alias, normalizedAlias, StringComparison.Ordinal))
-            {
-                device.Alias = normalizedAlias;
-                return true;
-            }
-
-            existing.Alias = normalizedAlias;
-            device.Alias = normalizedAlias;
-            _context.ContextChanged();
-            _context.OnDeviceAliasesChangedEvent();
-            return true;
+        public bool TrySetDevicePresentation(Device device, IEnumerable<Device> liveDevices, string alias, bool hidden,
+            int sortOrder, DeviceOutlineColor outlineColor, out string error)
+        {
+            return _context.DeviceAliasService.TrySetDevicePresentation(device, liveDevices, alias, hidden, sortOrder, outlineColor, out error);
         }
 
         public bool TrySetDevicePresentation(Device device, DeviceIoType type, string alias, bool hidden,
             int sortOrder, DeviceOutlineColor outlineColor, out string error)
         {
-            error = null;
-            if (device == null)
-            {
-                error = "No device is selected.";
-                return false;
-            }
-
-            if (_context.DeviceAliases == null) _context.DeviceAliases = new List<DeviceAlias>();
-
-            var identity = BuildAliasIdentity(device);
-            if (identity == null)
-            {
-                error = "This device does not expose enough identity information for persistent device settings.";
-                return false;
-            }
-
-            var existing = _context.DeviceAliases.FirstOrDefault(candidate => AliasIdentityEquals(candidate, identity));
-            var normalizedAlias = string.IsNullOrWhiteSpace(alias) ? null : alias.Trim();
-            var normalizedSortOrder = sortOrder < 0 ? int.MaxValue : sortOrder;
-            // DefaultOutlineColor existed briefly in pre-0.9.9r builds. Keep the XML field readable for
-            // backwards compatibility, but never let it influence presentation or persistence again.
-            var wantsPersistentSettings = normalizedAlias != null || hidden || normalizedSortOrder != int.MaxValue ||
-                                          outlineColor != DeviceOutlineColor.Default;
-
-            // HID paths and intentional logical slots are stable. A handle-only physical device is safe
-            // only while that provider exposes exactly one matching live device; otherwise two identical
-            // units would share the same settings and UCR would be pretending to know which is which.
-            if (wantsPersistentSettings && !CanPersistDeviceAlias(device, type))
-            {
-                error = "UCR cannot safely persist individual settings for this device because the provider does not expose a unique identity for it while identical devices are present.";
-                return false;
-            }
-
-            if (!wantsPersistentSettings)
-            {
-                if (existing != null)
-                {
-                    _context.DeviceAliases.Remove(existing);
-                    _context.ContextChanged();
-                    _context.OnDeviceAliasesChangedEvent();
-                }
-                device.Alias = null;
-                return true;
-            }
-
-            if (existing == null)
-            {
-                existing = identity;
-                _context.DeviceAliases.Add(existing);
-            }
-            else if (string.Equals(existing.Alias, normalizedAlias, StringComparison.Ordinal) &&
-                     existing.Hidden == hidden && existing.SortOrder == normalizedSortOrder &&
-                     existing.OutlineColor == outlineColor &&
-                     string.IsNullOrWhiteSpace(existing.DefaultOutlineColor))
-            {
-                device.Alias = normalizedAlias;
-                return true;
-            }
-
-            existing.Alias = normalizedAlias;
-            existing.Hidden = hidden;
-            existing.SortOrder = normalizedSortOrder;
-            existing.OutlineColor = outlineColor;
-            // Scrub the obsolete generated-default field the next time this device is saved.
-            existing.DefaultOutlineColor = null;
-            device.Alias = normalizedAlias;
-            _context.ContextChanged();
-            _context.OnDeviceAliasesChangedEvent();
-            return true;
+            return _context.DeviceAliasService.TrySetDevicePresentation(device, GetAvailableDeviceList(type, false), alias, hidden, sortOrder, outlineColor, out error);
         }
-
+        
         public void MergeDeviceAliases(IEnumerable<DeviceAlias> aliases, bool overwriteExisting)
         {
-            if (aliases == null) return;
-            if (_context.DeviceAliases == null) _context.DeviceAliases = new List<DeviceAlias>();
-            var changed = false;
-
-            foreach (var imported in aliases.Where(alias => alias != null))
-            {
-                var existing = _context.DeviceAliases.FirstOrDefault(candidate => AliasIdentityEquals(candidate, imported));
-                if (existing == null)
-                {
-                    var clone = imported.Clone();
-                    clone.DefaultOutlineColor = null;
-                    _context.DeviceAliases.Add(clone);
-                    changed = true;
-                }
-                else if (overwriteExisting &&
-                         (!string.Equals(existing.Alias, imported.Alias, StringComparison.Ordinal) ||
-                          existing.Hidden != imported.Hidden ||
-                          existing.Removed != imported.Removed ||
-                          existing.SortOrder != imported.SortOrder ||
-                          existing.OutlineColor != imported.OutlineColor ||
-                          !string.IsNullOrWhiteSpace(existing.DefaultOutlineColor)))
-                {
-                    existing.Alias = imported.Alias;
-                    existing.Hidden = imported.Hidden;
-                    existing.Removed = imported.Removed;
-                    existing.SortOrder = imported.SortOrder;
-                    existing.OutlineColor = imported.OutlineColor;
-                    existing.DefaultOutlineColor = null;
-                    changed = true;
-                }
-            }
-
-            if (changed) _context.OnDeviceAliasesChangedEvent();
+            _context.DeviceAliasService.MergeDeviceAliases(aliases, overwriteExisting);
         }
-
+        
         public void ReplaceDeviceAliases(IEnumerable<DeviceAlias> aliases)
         {
-            _context.DeviceAliases = aliases == null
-                ? new List<DeviceAlias>()
-                : aliases.Where(alias => alias != null).Select(alias =>
-                {
-                    var clone = alias.Clone();
-                    clone.DefaultOutlineColor = null;
-                    return clone;
-                }).ToList();
-            _context.OnDeviceAliasesChangedEvent();
+            _context.DeviceAliasService.ReplaceDeviceAliases(aliases);
         }
 
         public static bool AliasIdentityEquals(DeviceAlias left, DeviceAlias right)
         {
-            return DeviceIdentity.AliasEquals(left, right);
+            return DeviceAliasService.AliasIdentityEquals(left, right);
         }
 
         public static DeviceAlias BuildAliasIdentity(Device device)
         {
-            return DeviceIdentity.BuildAliasIdentity(device);
+            return DeviceAliasService.BuildAliasIdentity(device);
         }
-
-        private DeviceAlias FindAlias(Device device)
-        {
-            if (device == null || _context.DeviceAliases == null) return null;
-            var identity = BuildAliasIdentity(device);
-            if (identity == null) return null;
-
-            var exact = _context.DeviceAliases.FirstOrDefault(alias => AliasIdentityEquals(alias, identity));
-            if (exact != null) return exact;
-
-            // v0.9.9q and earlier stored Core_Interception aliases directly against DeviceHandle.
-            // Migrate that record in-place the first time the logical device is seen so existing friendly
-            // names/order settings survive the slot-churn fix instead of silently disappearing.
-            if (string.Equals(device.ProviderName, "Core_Interception", StringComparison.OrdinalIgnoreCase) &&
-                !string.IsNullOrWhiteSpace(device.DeviceHandle) && device.LogicalInstanceNumber <= 1)
-            {
-                var legacy = _context.DeviceAliases.FirstOrDefault(alias => alias != null &&
-                    alias.IdentityKind == DeviceAliasIdentityKind.HardwareHandle && alias.DeviceNumber == 0 &&
-                    string.Equals(alias.ProviderName, device.ProviderName, StringComparison.OrdinalIgnoreCase) &&
-                    string.Equals(alias.IdentityValue, device.DeviceHandle, StringComparison.OrdinalIgnoreCase));
-                if (legacy != null)
-                {
-                    legacy.IdentityValue = identity.IdentityValue;
-                    _context.ContextChanged();
-                    return legacy;
-                }
-            }
-
-            return null;
-        }
-
-        private void ApplyAliases(List<Device> devices)
-        {
-            if (devices == null) return;
-            foreach (var device in devices)
-            {
-                device.Alias = null;
-                var alias = FindAlias(device);
-                if (alias == null || string.IsNullOrWhiteSpace(alias.Alias)) continue;
-
-                if (alias.IdentityKind == DeviceAliasIdentityKind.HardwareHandle &&
-                    !string.Equals(device.ProviderName, "Core_Interception", StringComparison.OrdinalIgnoreCase) &&
-                    CountHandleMatches(device, GetRelevantIdentityPopulation(device, devices)) != 1)
-                {
-                    continue;
-                }
-
-                device.Alias = alias.Alias;
-            }
-        }
-
-        private static List<Device> GetRelevantIdentityPopulation(Device device, List<Device> devices)
-        {
-            var liveMatches = devices.Where(candidate => candidate != null && !candidate.IsCache &&
-                string.Equals(candidate.ProviderName, device.ProviderName, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(candidate.DeviceHandle, device.DeviceHandle, StringComparison.OrdinalIgnoreCase)).ToList();
-
-            return liveMatches.Count > 0 ? liveMatches : devices;
-        }
-
-        private static int CountHandleMatches(Device device, IEnumerable<Device> devices)
-        {
-            if (device == null || devices == null) return 0;
-            return devices.Count(candidate => candidate != null &&
-                string.Equals(candidate.ProviderName, device.ProviderName, StringComparison.OrdinalIgnoreCase) &&
-                string.Equals(candidate.DeviceHandle, device.DeviceHandle, StringComparison.OrdinalIgnoreCase));
-        }
-
-        private bool IsDeviceHidden(Device device, IEnumerable<Device> population)
-        {
-            var preference = FindAlias(device);
-            if (preference == null || !preference.Hidden) return false;
-
-            var devices = population == null ? new List<Device>() : population.ToList();
-            if (preference.IdentityKind == DeviceAliasIdentityKind.HardwareHandle &&
-                !string.Equals(device.ProviderName, "Core_Interception", StringComparison.OrdinalIgnoreCase) &&
-                CountHandleMatches(device, GetRelevantIdentityPopulation(device, devices)) != 1)
-            {
-                return false;
-            }
-
-            return true;
-        }
-
-        private List<Device> SortDevices(List<Device> devices)
-        {
-            return devices
-                .Select((device, index) =>
-                {
-                    var preference = FindAlias(device);
-                    if (preference != null && preference.IdentityKind == DeviceAliasIdentityKind.HardwareHandle &&
-                        !string.Equals(device.ProviderName, "Core_Interception", StringComparison.OrdinalIgnoreCase) &&
-                        CountHandleMatches(device, GetRelevantIdentityPopulation(device, devices)) != 1)
-                    {
-                        preference = null;
-                    }
-
-                    return new
-                    {
-                        Device = device,
-                        OriginalIndex = index,
-                        Preference = preference
-                    };
-                })
-                .OrderBy(item => item.Preference?.SortOrder ?? int.MaxValue)
-                .ThenBy(item => item.OriginalIndex)
-                .Select(item => item.Device)
-                .ToList();
-        }
-
+        
         #endregion
+
+
 
         public List<DeviceBindingNode> GetDeviceBindingMenu(Device device, DeviceIoType type, bool includeCache = true)
         {

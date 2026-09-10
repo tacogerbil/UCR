@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -31,6 +31,7 @@ namespace HidWizards.UCR.Core
         [XmlIgnore] public SubscriptionsManager SubscriptionsManager { get; set; }
         [XmlIgnore] public PluginsManager PluginManager { get; set; }
         [XmlIgnore] public BindingManager BindingManager { get; set; }
+        [XmlIgnore] public HidWizards.UCR.Core.Services.DeviceAliasService DeviceAliasService { get; set; }
 
         public delegate void ActiveProfileChanged(Profile profile);
         public event ActiveProfileChanged ActiveProfileChangedEvent;
@@ -69,6 +70,7 @@ namespace HidWizards.UCR.Core
                 Logger.Error(e, "IOWrapper provider directory not found");
             }
             
+            DeviceAliasService = new HidWizards.UCR.Core.Services.DeviceAliasService(this);
             ProfilesManager = new ProfilesManager(this, Profiles);
             DevicesManager = new DevicesManager(this);
             SubscriptionsManager = new SubscriptionsManager(this);
