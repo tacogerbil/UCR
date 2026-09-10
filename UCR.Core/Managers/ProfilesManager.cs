@@ -8,6 +8,7 @@ using System.Xml.Serialization;
 using HidWizards.UCR.Core.Models;
 using HidWizards.UCR.Core.Models.Binding;
 using HidWizards.UCR.Core.Persistence;
+using HidWizards.UCR.Core.Services;
 using NLog;
 
 namespace HidWizards.UCR.Core.Managers
@@ -114,7 +115,7 @@ namespace HidWizards.UCR.Core.Managers
             var profile = package.Profiles[0];
             profile.PostLoad(_context, parentProfile);
             AddProfile(profile, parentProfile);
-            _context.DevicesManager.MergeDeviceAliases(package.DeviceAliases, false);
+            _context.DeviceAliasService.MergeDeviceAliases(package.DeviceAliases, false);
             return profile;
         }
 
@@ -155,7 +156,7 @@ namespace HidWizards.UCR.Core.Managers
             if (mode == ProfileListImportMode.Merge)
             {
                 RegenerateIdentities(package.Profiles);
-                _context.DevicesManager.MergeDeviceAliases(package.DeviceAliases, false);
+                _context.DeviceAliasService.MergeDeviceAliases(package.DeviceAliases, false);
                 foreach (var profile in package.Profiles)
                 {
                     profile.PostLoad(_context);
@@ -170,7 +171,7 @@ namespace HidWizards.UCR.Core.Managers
                 }
 
                 _profiles.Clear();
-                _context.DevicesManager.ReplaceDeviceAliases(package.DeviceAliases);
+                _context.DeviceAliasService.ReplaceDeviceAliases(package.DeviceAliases);
                 foreach (var profile in package.Profiles)
                 {
                     profile.PostLoad(_context);
@@ -209,13 +210,13 @@ namespace HidWizards.UCR.Core.Managers
 
         private void AddAliasForDevice(Device device, ICollection<DeviceAlias> aliases)
         {
-            var identity = DevicesManager.BuildAliasIdentity(device);
+            var identity = DeviceAliasService.BuildAliasIdentity(device);
             if (identity == null) return;
 
             var alias = _context.DeviceAliases.FirstOrDefault(candidate =>
-                DevicesManager.AliasIdentityEquals(candidate, identity));
+                DeviceAliasService.AliasIdentityEquals(candidate, identity));
             if (alias == null || string.IsNullOrWhiteSpace(alias.Alias) ||
-                aliases.Any(candidate => DevicesManager.AliasIdentityEquals(candidate, alias))) return;
+                aliases.Any(candidate => DeviceAliasService.AliasIdentityEquals(candidate, alias))) return;
 
             // Single-profile portability carries the friendly name only. Hide/order are local UI
             // preferences and must not unexpectedly rearrange another machine when a profile is imported.
