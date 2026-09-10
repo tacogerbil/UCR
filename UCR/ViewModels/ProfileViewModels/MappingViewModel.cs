@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
 using System.Text.RegularExpressions;
+using HidWizards.UCR.Core.Adapters;
 using HidWizards.UCR.Core.Annotations;
 using HidWizards.UCR.Core.Managers;
 using HidWizards.UCR.Core.Models;

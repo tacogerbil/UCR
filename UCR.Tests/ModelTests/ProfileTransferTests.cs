@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,6 +7,7 @@ using HidWizards.UCR.Core;
 using HidWizards.UCR.Core.Managers;
 using HidWizards.UCR.Core.Models;
 using HidWizards.UCR.Core.Models.Binding;
+using HidWizards.UCR.Core.Persistence;
 using HidWizards.UCR.Plugins.Remapper;
 using NUnit.Framework;
 

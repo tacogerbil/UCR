@@ -1,14 +1,19 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
+using HidWizards.UCR.Core.Managers;
 using HidWizards.UCR.Core.Models;
 using HidWizards.UCR.Core.Models.Binding;
 using HidWizards.UCR.Core.Utilities;
+using HidWizards.IOWrapper.DataTransferObjects;
 
 namespace HidWizards.UCR.Core.Services
 {
     public class DeviceCacheService
     {
         private readonly DeviceCacheStore _deviceCacheStore;
+
 
         public DeviceCacheService(string cacheRoot)
         {

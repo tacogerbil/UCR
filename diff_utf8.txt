@@ -1,0 +1,291 @@
+﻿diff --git a/UCR.Core/Managers/DevicesManager.cs b/UCR.Core/Managers/DevicesManager.cs
+index d1e777c..11f8895 100644
+--- a/UCR.Core/Managers/DevicesManager.cs
++++ b/UCR.Core/Managers/DevicesManager.cs
+@@ -1,4 +1,4 @@
+-∩╗┐using System;
++using System;
+ using System.Collections.Generic;
+ using System.Linq;
+ using System.Reflection;
+@@ -6,6 +6,7 @@ using System.Threading;
+ using System.Threading.Tasks;
+ using HidWizards.IOWrapper.DataTransferObjects;
+ using HidWizards.IOWrapper.ProviderInterface.Interfaces;
++using HidWizards.UCR.Core.Adapters;
+ using HidWizards.UCR.Core.Models;
+ using HidWizards.UCR.Core.Models.Binding;
+ using HidWizards.UCR.Core.Utilities;
+@@ -14,17 +15,11 @@ using Logger = NLog.Logger;
+ 
+ namespace HidWizards.UCR.Core.Managers
+ {
+-    public sealed class DetectedInputControl
+-    {
+-        public Device Device { get; set; }
+-        public string ControlTitle { get; set; }
+-    }
+-
+     public class DevicesManager
+     {
+         private readonly Context _context;
+ 
+-        private readonly DeviceCacheStore _deviceCacheStore;
++        private readonly HidWizards.UCR.Core.Services.DeviceCacheService _deviceCacheService;
+         // Raw provider slots are runtime endpoints, not user-facing physical identity. Detection claims
+         // let us distinguish a genuinely second identical Core_Interception device without leaking
+         // ordinary slot churn such as #4/#6 into the UI.
+@@ -33,19 +28,13 @@ namespace HidWizards.UCR.Core.Managers
+ 
+         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
+         private static readonly TimeSpan DeviceDetectionArmDelay = TimeSpan.FromMilliseconds(350);
+-        private readonly object _deviceDetectionLock = new object();
+-        private TaskCompletionSource<DetectedInputControl> _deviceDetectionCompletion;
+-        private List<Device> _deviceDetectionDevices;
+-        private Timer _deviceDetectionTimer;
+-        private CancellationTokenRegistration _deviceDetectionCancellation;
+-        private DateTime _deviceDetectionAcceptAfterUtc = DateTime.MaxValue;
+-        private DeviceBindingCategory? _deviceDetectionRequiredCategory;
++        private readonly HidWizards.UCR.Core.Adapters.DeviceDetectionAdapter _deviceDetectionAdapter = new HidWizards.UCR.Core.Adapters.DeviceDetectionAdapter();
+ 
+ 
+         public DevicesManager(Context context)
+         {
+             _context = context;
+-            _deviceCacheStore = new DeviceCacheStore(_context.Store.CacheRoot);
++            _deviceCacheService = new HidWizards.UCR.Core.Services.DeviceCacheService(_context.Store.CacheRoot);
+         }
+ 
+         /// <summary>
+@@ -67,18 +56,6 @@ namespace HidWizards.UCR.Core.Managers
+         /// </summary>
+         public List<Device> GetManagementDeviceList(DeviceIoType type)
+         {
+-            if (_context.IOController != null)
+-            {
+-                try
+-                {
+-                    var devices = GetAvailableDeviceList(type);
+-                    if (devices.Count > 0 || type == DeviceIoType.Output) return devices;
+-                }
+-                catch (Exception exception)
+-                {
+-                    Logger.Error(exception, "Unable to enumerate devices for the Devices management page");
+-                }
+-            }
+ 
+             // Device caches are provider-generated records of hardware UCR has actually enumerated before.
+             // They are a valid management fallback when live provider enumeration is temporarily unavailable,
+@@ -90,7 +67,7 @@ namespace HidWizards.UCR.Core.Managers
+ 
+         private List<Device> GetCachedManagementInputInventory()
+         {
+-            var result = CollapseLogicalDevicesForDisplay(_deviceCacheStore.LoadAllProviders(), DeviceIoType.Input);
++            var result = CollapseLogicalDevicesForDisplay(_deviceCacheService.LoadAllProviders(), DeviceIoType.Input);
+             ApplyAliases(result);
+             return SortDevices(result);
+         }
+@@ -191,7 +168,7 @@ namespace HidWizards.UCR.Core.Managers
+                 }
+ 
+                 if (!includeCache) continue;
+-                var cachedDevices = _deviceCacheStore.LoadProvider(providerReport.Value.ProviderDescriptor.ProviderName);
++                var cachedDevices = _deviceCacheService.LoadProvider(providerReport.Value.ProviderDescriptor.ProviderName);
+                 foreach (var cachedDevice in cachedDevices)
+                 {
+                     if (result.Any(liveDevice => CacheRepresentsLiveEndpoint(cachedDevice, liveDevice))) continue;
+@@ -471,84 +448,48 @@ namespace HidWizards.UCR.Core.Managers
+                 throw new InvalidOperationException("Finish the current binding operation before detecting an input.");
+             }
+ 
+-            // Detection must listen to raw provider endpoints. User-facing enumeration deliberately
+-            // collapses Core_Interception slot churn, but the detector needs the exact endpoint that
+-            // produced input so it can distinguish churn from a genuinely second identical device.
+             var devices = GetRawAvailableDeviceList(DeviceIoType.Input, false);
+             if (devices.Count == 0) return Task.FromResult<DetectedInputControl>(null);
+ 
+-            TaskCompletionSource<DetectedInputControl> completion;
+-            lock (_deviceDetectionLock)
+-            {
+-                if (_deviceDetectionCompletion != null)
+-                {
+-                    throw new InvalidOperationException("Input detection is already running.");
+-                }
+-
+-                completion = new TaskCompletionSource<DetectedInputControl>();
+-                _deviceDetectionCompletion = completion;
+-                _deviceDetectionDevices = devices;
+-                _deviceDetectionAcceptAfterUtc = DateTime.UtcNow.Add(DeviceDetectionArmDelay);
+-                _deviceDetectionRequiredCategory = requiredCategory;
+-            }
++            var task = _deviceDetectionAdapter.ArmDetectionTimer(
++                (int)timeout.TotalMilliseconds,
++                cancellationToken,
++                devices,
++                requiredCategory,
++                DeviceDetectionArmDelay,
++                CompleteDeviceDetectionAction);
+ 
+-            try
++            foreach (var device in devices)
+             {
+-                foreach (var device in devices)
++                try
+                 {
+-                    try
+-                    {
+-                        _context.IOController.SetDetectionMode(DetectionMode.Bind,
+-                            GetProviderDescriptor(device), GetDeviceDescriptor(device), DeviceDetectionInputChanged);
+-                    }
+-                    catch (Exception exception)
+-                    {
+-                        Logger.Error(exception,
+-                            $"Could not enable input detection for provider={device.ProviderName}, handle={device.DeviceHandle}, instance={device.DeviceNumber}");
+-                    }
++                    _context.IOController.SetDetectionMode(DetectionMode.Bind,
++                        GetProviderDescriptor(device), GetDeviceDescriptor(device), DeviceDetectionInputChanged);
+                 }
+-
+-                lock (_deviceDetectionLock)
++                catch (Exception exception)
+                 {
+-                    if (_deviceDetectionCompletion == completion)
+-                    {
+-                        _deviceDetectionTimer = new Timer(_ => CompleteDeviceDetection(null), null, timeout,
+-                            Timeout.InfiniteTimeSpan);
+-                        if (cancellationToken.CanBeCanceled)
+-                        {
+-                            _deviceDetectionCancellation = cancellationToken.Register(() =>
+-                                ThreadPool.QueueUserWorkItem(_ => CompleteDeviceDetection(null)));
+-                        }
+-                    }
++                    Logger.Error(exception,
++                        $"Could not enable input detection for provider={device.ProviderName}, handle={device.DeviceHandle}, instance={device.DeviceNumber}");
+                 }
+             }
+-            catch
+-            {
+-                CompleteDeviceDetection(null);
+-                throw;
+-            }
+ 
+-            return completion.Task;
++            return task;
+         }
+ 
+         public void CancelInputDeviceDetection()
+         {
+-            CompleteDeviceDetection(null);
++            _deviceDetectionAdapter.CancelInputDeviceDetection(CompleteDeviceDetectionAction);
+         }
+ 
+         private void DeviceDetectionInputChanged(ProviderDescriptor providerDescriptor,
+             DeviceDescriptor deviceDescriptor, BindingReport bindingReport, short value)
+         {
+-            List<Device> devices;
+-            DateTime acceptAfter;
+-            DeviceBindingCategory? requiredCategory;
+-            lock (_deviceDetectionLock)
+-            {
+-                if (_deviceDetectionCompletion == null) return;
+-                devices = _deviceDetectionDevices;
+-                acceptAfter = _deviceDetectionAcceptAfterUtc;
+-                requiredCategory = _deviceDetectionRequiredCategory;
+-            }
++            var state = _deviceDetectionAdapter.GetState();
++            if (state == null) return;
++
++            var devices = state.Devices;
++            var acceptAfter = state.AcceptAfterUtc;
++            var requiredCategory = state.RequiredCategory;
+ 
+             if (bindingReport == null) return;
+ 
+@@ -581,14 +522,14 @@ namespace HidWizards.UCR.Core.Managers
+             if (DateTime.UtcNow < acceptAfter && IsPointerDetectionDevice(device)) return;
+ 
+             var descriptor = bindingReport.BindingDescriptor;
+-            var detected = new DetectedInputControl
++            var detected = new HidWizards.UCR.Core.Adapters.DetectedInputControl
+             {
+                 Device = device,
+                 ControlTitle = bindingReport.Title ?? string.Empty
+             };
+ 
+             Logger.Debug($"Detected input: provider={device.ProviderName}, handle={device.DeviceHandle}, instance={device.DeviceNumber}, control={detected.ControlTitle}, category={category}, type={descriptor.Type}, index={descriptor.Index}, subIndex={descriptor.SubIndex}");
+-            ThreadPool.QueueUserWorkItem(_ => CompleteDeviceDetection(detected));
++            ThreadPool.QueueUserWorkItem(_ => _deviceDetectionAdapter.CompleteDeviceDetection(detected, CompleteDeviceDetectionAction));
+         }
+ 
+         private static bool IsPointerDetectionDevice(Device device)
+@@ -619,34 +560,12 @@ namespace HidWizards.UCR.Core.Managers
+             }
+         }
+ 
+-        private void CompleteDeviceDetection(DetectedInputControl detectedInput)
++        private void CompleteDeviceDetectionAction(HidWizards.UCR.Core.Adapters.DetectedInputControl detectedInput)
+         {
+-            TaskCompletionSource<DetectedInputControl> completion;
+-            List<Device> devices;
+-            Timer timer;
+-            CancellationTokenRegistration cancellation;
++            var state = _deviceDetectionAdapter.GetState();
++            if (state == null || state.Devices == null) return;
+ 
+-            lock (_deviceDetectionLock)
+-            {
+-                completion = _deviceDetectionCompletion;
+-                if (completion == null) return;
+-
+-                devices = _deviceDetectionDevices ?? new List<Device>();
+-                timer = _deviceDetectionTimer;
+-                cancellation = _deviceDetectionCancellation;
+-
+-                _deviceDetectionCompletion = null;
+-                _deviceDetectionDevices = null;
+-                _deviceDetectionTimer = null;
+-                _deviceDetectionCancellation = default(CancellationTokenRegistration);
+-                _deviceDetectionAcceptAfterUtc = DateTime.MaxValue;
+-                _deviceDetectionRequiredCategory = null;
+-            }
+-
+-            timer?.Dispose();
+-            cancellation.Dispose();
+-
+-            foreach (var device in devices)
++            foreach (var device in state.Devices)
+             {
+                 try
+                 {
+@@ -659,8 +578,6 @@ namespace HidWizards.UCR.Core.Managers
+                         $"Could not restore input subscription after detection for provider={device.ProviderName}, handle={device.DeviceHandle}, instance={device.DeviceNumber}");
+                 }
+             }
+-
+-            completion.TrySetResult(detectedInput);
+         }
+ 
+         private static DeviceDescriptor GetDeviceDescriptor(Device device)
+@@ -1299,21 +1216,9 @@ namespace HidWizards.UCR.Core.Managers
+ 
+         public bool UpdateDeviceCache()
+         {
+-            var success = true;
+             RefreshDeviceList();
+             var availableDeviceList = GetAvailableDeviceList(DeviceIoType.Input, false);
+-
+-            // Remove obsolete cache copies for endpoints that are live now before writing current
+-            // provider descriptors. Disconnected-device caches remain available for old binding menus.
+-            _deviceCacheStore.RemoveOverlapping(availableDeviceList);
+-
+-            foreach (var device in availableDeviceList)
+-            {
+-                success &= _deviceCacheStore.Save(device, GetDeviceBindingMenu(device, DeviceIoType.Input, false));
+-            }
+-
+-            _deviceCacheStore.ClearMemoryCache();
+-            return success;
++            return _deviceCacheService.UpdateDeviceCache(availableDeviceList, GetDeviceBindingMenu);
+         }
+ 
+         #endregion
