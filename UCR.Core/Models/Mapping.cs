@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,6 +13,8 @@ namespace HidWizards.UCR.Core.Models
         /* Persistence */
         [XmlAttribute]
         public string Title { get; set; }
+        [XmlAttribute]
+        public string TargetOutputKey { get; set; }
         public List<DeviceBinding> DeviceBindings { get; set; }
         public List<Plugin> Plugins { get; set; }
 

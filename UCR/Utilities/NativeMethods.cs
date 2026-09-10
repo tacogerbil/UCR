@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 
 namespace HidWizards.UCR.Utilities
@@ -29,6 +29,11 @@ namespace HidWizards.UCR.Utilities
         /// An application sends the WM_COPYDATA message to pass data to another application.
         /// </summary>
         public static uint WM_COPYDATA = 0x004A;
+
+        /// <summary>
+        /// The system sends the WM_DEVICECHANGE message to all applications when a device or computer's hardware configuration changes.
+        /// </summary>
+        public static uint WM_DEVICECHANGE = 0x0219;
 
         /// <summary>
         /// Contains data to be passed to another application by the WM_COPYDATA message.

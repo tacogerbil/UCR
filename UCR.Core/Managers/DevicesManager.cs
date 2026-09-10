@@ -40,16 +40,29 @@ namespace HidWizards.UCR.Core.Managers
             _inventoryService = new HidWizards.UCR.Core.Services.DeviceInventoryService(_deviceCacheService);
         }
 
+        public event Action DeviceListChanged;
+
+        private List<Device> _cachedAvailableInputDevices;
+        private List<Device> _cachedAvailableOutputDevices;
+
         /// <summary>
         /// Gets a list of available devices from the backend
         /// </summary>
         /// <param name="type"></param>
         public List<Device> GetAvailableDeviceList(DeviceIoType type, bool includeCache = true)
         {
+            if (type == DeviceIoType.Input && _cachedAvailableInputDevices != null) return _cachedAvailableInputDevices;
+            if (type == DeviceIoType.Output && _cachedAvailableOutputDevices != null) return _cachedAvailableOutputDevices;
+
             var raw = GetRawAvailableDeviceList(type, includeCache);
             var result = CollapseLogicalDevicesForDisplay(raw, type);
             _context.DeviceAliasService.ApplyAliases(result);
-            return _context.DeviceAliasService.SortDevices(result);
+            var sorted = _context.DeviceAliasService.SortDevices(result);
+
+            if (type == DeviceIoType.Input) _cachedAvailableInputDevices = sorted;
+            if (type == DeviceIoType.Output) _cachedAvailableOutputDevices = sorted;
+
+            return sorted;
         }
 
         /// <summary>
@@ -532,7 +545,11 @@ namespace HidWizards.UCR.Core.Managers
 
         public void RefreshDeviceList()
         {
+            _cachedAvailableInputDevices = null;
+            _cachedAvailableOutputDevices = null;
             _context.IOController.RefreshDevices();
+            DeviceListChanged?.Invoke();
+            _context.InvokeDeviceListChanged();
         }
 
         public List<Device> GetAvailableDevicesListFromSameProvider(DeviceIoType type, Device device)

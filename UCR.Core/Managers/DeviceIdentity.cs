@@ -14,6 +14,9 @@ namespace HidWizards.UCR.Core.Managers
         private static readonly Regex CoreInterceptionSlotSuffix =
             new Regex(@"\s+#\d+\s*$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
+        private static readonly Regex HidPathRegex = 
+            new Regex(@"#([^#]+)#([^#]+)", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
         public static string GetLogicalTitle(Device device)
         {
             if (device == null) return string.Empty;
@@ -24,6 +27,25 @@ namespace HidWizards.UCR.Core.Managers
             }
 
             return CoreInterceptionSlotSuffix.Replace(title, string.Empty).Trim();
+        }
+
+        public static string ExtractHardwareIdentity(string hidPath)
+        {
+            if (string.IsNullOrWhiteSpace(hidPath)) return null;
+            var match = HidPathRegex.Match(hidPath);
+            if (!match.Success) return hidPath; // fallback
+
+            var hwId = match.Groups[1].Value.ToLowerInvariant();
+            var instanceId = match.Groups[2].Value.ToLowerInvariant();
+            
+            // If the instance ID does not contain an ampersand, it's a real hardware serial number
+            if (!instanceId.Contains("&"))
+            {
+                return hwId + "#" + instanceId;
+            }
+
+            // Otherwise, it's a port-derived instance ID, so just return the VID/PID part
+            return hwId;
         }
 
         public static string BuildLogicalKey(Device device)
@@ -47,7 +69,7 @@ namespace HidWizards.UCR.Core.Managers
             }
 
             if (!string.IsNullOrWhiteSpace(device.HidPath))
-                return provider + "|hid|" + device.HidPath.Trim();
+                return provider + "|hid|" + ExtractHardwareIdentity(device.HidPath);
 
             if (UsesLogicalSlotIdentity(provider))
                 return provider + "|slot|" + (device.DeviceHandle ?? string.Empty).Trim() + "|" + device.DeviceNumber;
@@ -81,7 +103,13 @@ namespace HidWizards.UCR.Core.Managers
 
             if (!string.IsNullOrEmpty(left.HidPath) && !string.IsNullOrEmpty(right.HidPath))
             {
-                return string.Equals(left.HidPath, right.HidPath, StringComparison.OrdinalIgnoreCase);
+                var leftHw = ExtractHardwareIdentity(left.HidPath);
+                var rightHw = ExtractHardwareIdentity(right.HidPath);
+                if (string.Equals(leftHw, rightHw, StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(GetLogicalTitle(left), GetLogicalTitle(right), StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
             }
 
             return DescriptorEquals(left, right);
@@ -118,7 +146,13 @@ namespace HidWizards.UCR.Core.Managers
 
             if (!string.IsNullOrWhiteSpace(cachedDevice.HidPath) && !string.IsNullOrWhiteSpace(liveDevice.HidPath))
             {
-                return string.Equals(cachedDevice.HidPath, liveDevice.HidPath, StringComparison.OrdinalIgnoreCase);
+                var cachedHw = ExtractHardwareIdentity(cachedDevice.HidPath);
+                var liveHw = ExtractHardwareIdentity(liveDevice.HidPath);
+                if (string.Equals(cachedHw, liveHw, StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(GetLogicalTitle(cachedDevice), GetLogicalTitle(liveDevice), StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
             }
 
             return !string.IsNullOrWhiteSpace(cachedDevice.DeviceHandle) &&
@@ -159,12 +193,14 @@ namespace HidWizards.UCR.Core.Managers
 
             if (!string.IsNullOrWhiteSpace(device.HidPath))
             {
+                var hwId = ExtractHardwareIdentity(device.HidPath);
+                var identityValue = string.IsNullOrWhiteSpace(hwId) ? device.HidPath.Trim() : hwId;
                 return new DeviceAlias
                 {
                     ProviderName = device.ProviderName,
                     IdentityKind = DeviceAliasIdentityKind.HidPath,
-                    IdentityValue = device.HidPath.Trim(),
-                    DeviceNumber = 0
+                    IdentityValue = identityValue + "|" + GetLogicalTitle(device),
+                    DeviceNumber = Math.Max(0, device.LogicalInstanceNumber - 1)
                 };
             }
 

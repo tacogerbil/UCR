@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
@@ -114,7 +114,7 @@ namespace HidWizards.UCR.ViewModels.ProfileViewModels
             }
         }
 
-        public MappingViewModel AddMapping(Mapping mapping)
+        public MappingViewModel AddMapping(Core.Models.Mapping mapping)
         {
             var mappingViewModel = new MappingViewModel(this, mapping);
             MappingsList.Add(mappingViewModel);
