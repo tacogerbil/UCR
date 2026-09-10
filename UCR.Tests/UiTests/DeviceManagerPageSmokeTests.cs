@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Windows;
@@ -36,7 +36,6 @@ namespace HidWizards.UCR.Tests.UiTests
         }
 
         [Test]
-        [Apartment(ApartmentState.STA)]
         public void DeviceManagerPageMaterializesRealDeviceRowAndColourButton()
         {
             EnsureApplicationResources();
@@ -87,7 +86,6 @@ namespace HidWizards.UCR.Tests.UiTests
 
 
         [Test]
-        [Apartment(ApartmentState.STA)]
         public void AddDevicePickerMaterializesSemanticDeviceBadges()
         {
             EnsureApplicationResources();

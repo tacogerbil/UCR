@@ -1,0 +1,2362 @@
+{
+  "settings": {
+    "components": {
+      "code": true,
+      "binaries": false
+    },
+    "targetId": "",
+    "targetDisplayName": ".NETCoreApp,Version=v8.0"
+  },
+  "analysisStartTime": "2026-09-10T16:31:56.4198166Z",
+  "analysisEndTime": "2026-09-10T16:32:03.6296129Z",
+  "privacyMode": "Protected",
+  "privacyModeHelpUrl": "https://go.microsoft.com/fwlink/?linkid=2270980",
+  "stats": {
+    "summary": {
+      "projects": 6,
+      "issues": 9,
+      "incidents": 108,
+      "effort": 108
+    },
+    "charts": {
+      "severity": {
+        "Mandatory": 74,
+        "Optional": 6,
+        "Potential": 28,
+        "Information": 0
+      },
+      "category": {
+        "NuGet": 13,
+        "Project": 11,
+        "Api": 84
+      }
+    }
+  },
+  "projects": [
+    {
+      "path": "build\\.build.csproj",
+      "startingProject": true,
+      "issues": 3,
+      "storyPoints": 3,
+      "ruleInstances": [
+        {
+          "incidentId": "49659ad0-a599-4135-9937-b51d212d3c97",
+          "ruleId": "NuGet.0001",
+          "projectPath": "build\\.build.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "build\\.build.csproj",
+            "snippet": "Nuke.MSBuildLocator, 0.18.0\n\nRecommendation:\n\nNuke.MSBuildLocator, 6.3.0",
+            "label": "Nuke.MSBuildLocator 0.18.0",
+            "properties": {
+              "PackageId": "Nuke.MSBuildLocator",
+              "PackageVersion": "0.18.0",
+              "PackageNewVersion": "6.3.0",
+              "PackageReplacements": null
+            }
+          }
+        },
+        {
+          "incidentId": "41725de9-60fa-4c80-8653-f29d1067c65d",
+          "ruleId": "NuGet.0004",
+          "projectPath": "build\\.build.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "build\\.build.csproj",
+            "snippet": "SharpZipLib, 1.1.0\n\nRecommendation:\n\nSharpZipLib, 1.4.2",
+            "label": "SharpZipLib 1.1.0",
+            "properties": {
+              "PackageId": "SharpZipLib",
+              "PackageVersion": "1.1.0",
+              "PackageNewVersion": "1.4.2",
+              "PackageReplacements": null
+            }
+          }
+        },
+        {
+          "incidentId": "f7ebc825-9bfd-450e-96a7-ee2361b46c93",
+          "ruleId": "Project.0002",
+          "projectPath": "build\\.build.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "build\\.build.csproj",
+            "snippet": "Current target framework: netcoreapp2.1\nRecommended target framework: net8.0-windows"
+          }
+        }
+      ]
+    },
+    {
+      "path": "UCR.Core\\UCR.Core.csproj",
+      "startingProject": true,
+      "issues": 9,
+      "storyPoints": 90,
+      "ruleInstances": [
+        {
+          "incidentId": "7f5c88f7-a528-45f8-8b76-d8c72627b558",
+          "ruleId": "NuGet.0002",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\UCR.Core.csproj",
+            "snippet": "Newtonsoft.Json, 12.0.3\n\nRecommendation:\n\nNewtonsoft.Json 13.0.4",
+            "label": "Newtonsoft.Json 12.0.3",
+            "properties": {
+              "PackageId": "Newtonsoft.Json",
+              "PackageVersion": "12.0.3",
+              "PackageNewVersion": "13.0.4",
+              "PackageReplacements": null
+            }
+          }
+        },
+        {
+          "incidentId": "23e70634-1a42-4436-af6f-d2f9c1457039",
+          "ruleId": "NuGet.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\UCR.Core.csproj",
+            "snippet": "NLog, 4.4.12\n\nRecommendation:\n\nNLog, 6.2.0",
+            "label": "NLog 4.4.12",
+            "properties": {
+              "PackageId": "NLog",
+              "PackageVersion": "4.4.12",
+              "PackageNewVersion": "6.2.0",
+              "PackageReplacements": null
+            }
+          }
+        },
+        {
+          "incidentId": "3a9684dc-429c-47d2-b047-2960ce5e816c",
+          "ruleId": "NuGet.0004",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\UCR.Core.csproj",
+            "snippet": "Newtonsoft.Json, 12.0.3\n\nRecommendation:\n\nNewtonsoft.Json, 13.0.4",
+            "label": "Newtonsoft.Json 12.0.3",
+            "properties": {
+              "PackageId": "Newtonsoft.Json",
+              "PackageVersion": "12.0.3",
+              "PackageNewVersion": "13.0.4",
+              "PackageReplacements": null
+            }
+          }
+        },
+        {
+          "incidentId": "81067475-f761-4a9d-ba3e-f22c68722cf5",
+          "ruleId": "NuGet.0005",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\UCR.Core.csproj",
+            "snippet": "NLog.Config, 4.4.12\n\nRecommendation:\n\nNLog.Config nuget-package will no longer be released.\n\nReason: NLog.Config-nuget-package stopped working properly when Microsoft refactored the nuget-package-system to support \u003Cpackagereference\u003E. Microsoft disabled the ability for a nuget-package to inject a default NLog.config into the project directory when one didn\u2019t exist. Instead it became overwrite always, so when deploying an application with dependency on NLog.config-nuget-package, then it would unexpectedly reset the NLog.config.\n\nSee also NLog 5.0 - List of major changes: https://nlog-project.org/2021/08/25/nlog-5-0-preview1-ready.html\nReplacement: NLog.Config, 4.7.15",
+            "label": "NLog.Config 4.4.12",
+            "properties": {
+              "PackageId": "NLog.Config",
+              "PackageVersion": "4.4.12",
+              "PackageNewVersion": null,
+              "PackageReplacements": null
+            }
+          }
+        },
+        {
+          "incidentId": "dc92c011-3f9a-4149-8426-92121776c6ef",
+          "ruleId": "Project.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\UCR.Core.csproj"
+          }
+        },
+        {
+          "incidentId": "6d34b9a0-00d0-4abb-9810-286d6ba9c3c8",
+          "ruleId": "Project.0002",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\UCR.Core.csproj",
+            "snippet": "Current target framework: .NETFramework,Version=v4.5.2\nRecommended target framework: net8.0-windows"
+          }
+        },
+        {
+          "incidentId": "ee69a24d-5e0f-4448-8fe8-af64bd5a1629",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Utilities\\AxisHelpers\\CircularDeadZoneHelper.cs",
+            "snippet": "P:System.Windows.Vector.Y",
+            "label": "P:System.Windows.Vector.Y",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.vector.y",
+                "isCustom": false
+              }
+            ],
+            "line": 54,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "11bd2239-712f-43a1-b2fc-5fbc36e04f0e",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Utilities\\AxisHelpers\\CircularDeadZoneHelper.cs",
+            "snippet": "P:System.Windows.Vector.X",
+            "label": "P:System.Windows.Vector.X",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.vector.x",
+                "isCustom": false
+              }
+            ],
+            "line": 54,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "a7aad3cf-e913-43c7-8ae6-a2192fcf07c4",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Utilities\\AxisHelpers\\CircularDeadZoneHelper.cs",
+            "snippet": "P:System.Windows.Vector.Length",
+            "label": "P:System.Windows.Vector.Length",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.vector.length",
+                "isCustom": false
+              }
+            ],
+            "line": 49,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "3753d420-c1ad-4845-b8dd-9e512113a161",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Utilities\\AxisHelpers\\CircularDeadZoneHelper.cs",
+            "snippet": "T:System.Windows.Vector",
+            "label": "T:System.Windows.Vector",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.vector",
+                "isCustom": false
+              }
+            ],
+            "line": 48,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "fffb1cde-9352-4e69-ad29-81cd6de00304",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Utilities\\AxisHelpers\\CircularDeadZoneHelper.cs",
+            "snippet": "M:System.Windows.Vector.#ctor(System.Double,System.Double)",
+            "label": "M:System.Windows.Vector.#ctor(System.Double,System.Double)",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.vector.vector",
+                "isCustom": false
+              }
+            ],
+            "line": 48,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "7a89597b-e70b-48e7-9c07-79efe413491a",
+          "ruleId": "Api.0002",
+          "description": "API is available in package System.ComponentModel.Composition, 8.0.0.",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Models\\Plugin.cs",
+            "snippet": "M:System.ComponentModel.Composition.InheritedExportAttribute.#ctor(System.Type)",
+            "label": "M:System.ComponentModel.Composition.InheritedExportAttribute.#ctor(System.Type)",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.componentmodel.composition.inheritedexportattribute.inheritedexportattribute",
+                "isCustom": false
+              }
+            ],
+            "line": 14,
+            "column": 5
+          }
+        },
+        {
+          "incidentId": "6ed49990-8495-4900-a614-4ee00e6af764",
+          "ruleId": "Api.0002",
+          "description": "API is available in package System.ComponentModel.Composition, 8.0.0.",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Models\\Plugin.cs",
+            "snippet": "T:System.ComponentModel.Composition.InheritedExportAttribute",
+            "label": "T:System.ComponentModel.Composition.InheritedExportAttribute",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.componentmodel.composition.inheritedexportattribute",
+                "isCustom": false
+              }
+            ],
+            "line": 14,
+            "column": 5
+          }
+        },
+        {
+          "incidentId": "3d143227-b3fc-40d1-b991-c95613493fe1",
+          "ruleId": "Api.0002",
+          "description": "API is available in package System.ComponentModel.Composition, 8.0.0.",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\PluginsManager.cs",
+            "snippet": "T:System.ComponentModel.Composition.Hosting.CompositionContainer",
+            "label": "T:System.ComponentModel.Composition.Hosting.CompositionContainer",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.componentmodel.composition.hosting.compositioncontainer",
+                "isCustom": false
+              }
+            ],
+            "line": 39,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "0f777a04-5420-4197-9c0e-73da91ced8cd",
+          "ruleId": "Api.0002",
+          "description": "API is available in package System.ComponentModel.Composition, 8.0.0.",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\PluginsManager.cs",
+            "snippet": "T:System.ComponentModel.Composition.AttributedModelServices",
+            "label": "T:System.ComponentModel.Composition.AttributedModelServices",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.componentmodel.composition.attributedmodelservices",
+                "isCustom": false
+              }
+            ],
+            "line": 39,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "c111f6ce-a391-49db-8cf8-6fff2472a6dd",
+          "ruleId": "Api.0002",
+          "description": "API is available in package System.ComponentModel.Composition, 8.0.0.",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\PluginsManager.cs",
+            "snippet": "M:System.ComponentModel.Composition.AttributedModelServices.ComposeParts(System.ComponentModel.Composition.Hosting.CompositionContainer,System.Object[])",
+            "label": "M:System.ComponentModel.Composition.AttributedModelServices.ComposeParts(System.ComponentModel.Composition.Hosting.CompositionContainer,System.Object[])",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.componentmodel.composition.attributedmodelservices.composeparts",
+                "isCustom": false
+              }
+            ],
+            "line": 39,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "e6bb8774-9a19-4a8b-a5fe-e48fdee91f05",
+          "ruleId": "Api.0002",
+          "description": "API is available in package System.ComponentModel.Composition, 8.0.0.",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\PluginsManager.cs",
+            "snippet": "T:System.ComponentModel.Composition.Hosting.CompositionContainer",
+            "label": "T:System.ComponentModel.Composition.Hosting.CompositionContainer",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.componentmodel.composition.hosting.compositioncontainer",
+                "isCustom": false
+              }
+            ],
+            "line": 38,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "ee60673e-3d1f-4a31-8ecd-20c155698715",
+          "ruleId": "Api.0002",
+          "description": "API is available in package System.ComponentModel.Composition, 8.0.0.",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\PluginsManager.cs",
+            "snippet": "M:System.ComponentModel.Composition.Hosting.CompositionContainer.#ctor(System.ComponentModel.Composition.Primitives.ComposablePartCatalog,System.ComponentModel.Composition.Hosting.ExportProvider[])",
+            "label": "M:System.ComponentModel.Composition.Hosting.CompositionContainer.#ctor(System.ComponentModel.Composition.Primitives.ComposablePartCatalog,System.ComponentModel.Composition.Hosting.ExportProvider[])",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.componentmodel.composition.hosting.compositioncontainer.compositioncontainer",
+                "isCustom": false
+              }
+            ],
+            "line": 38,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "0c0280ac-0eb0-4160-bca9-c3a14565e6b9",
+          "ruleId": "Api.0002",
+          "description": "API is available in package System.ComponentModel.Composition, 8.0.0.",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\PluginsManager.cs",
+            "snippet": "T:System.ComponentModel.Composition.Hosting.CompositionContainer",
+            "label": "T:System.ComponentModel.Composition.Hosting.CompositionContainer",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.componentmodel.composition.hosting.compositioncontainer",
+                "isCustom": false
+              }
+            ],
+            "line": 38,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "54c7b1b5-aa0d-4fc0-aacf-cc7a89e0b593",
+          "ruleId": "Api.0002",
+          "description": "API is available in package System.ComponentModel.Composition, 8.0.0.",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\PluginsManager.cs",
+            "snippet": "T:System.ComponentModel.Composition.Hosting.DirectoryCatalog",
+            "label": "T:System.ComponentModel.Composition.Hosting.DirectoryCatalog",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.componentmodel.composition.hosting.directorycatalog",
+                "isCustom": false
+              }
+            ],
+            "line": 29,
+            "column": 24
+          }
+        },
+        {
+          "incidentId": "32fd9da3-2004-4d31-9c61-83608f8a7c97",
+          "ruleId": "Api.0002",
+          "description": "API is available in package System.ComponentModel.Composition, 8.0.0.",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\PluginsManager.cs",
+            "snippet": "M:System.ComponentModel.Composition.Hosting.DirectoryCatalog.#ctor(System.String)",
+            "label": "M:System.ComponentModel.Composition.Hosting.DirectoryCatalog.#ctor(System.String)",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.componentmodel.composition.hosting.directorycatalog.directorycatalog",
+                "isCustom": false
+              }
+            ],
+            "line": 29,
+            "column": 24
+          }
+        },
+        {
+          "incidentId": "f09d0f01-b163-4a3c-b77b-1e15c00a335a",
+          "ruleId": "Api.0002",
+          "description": "API is available in package System.ComponentModel.Composition, 8.0.0.",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\PluginsManager.cs",
+            "snippet": "P:System.ComponentModel.Composition.Hosting.AggregateCatalog.Catalogs",
+            "label": "P:System.ComponentModel.Composition.Hosting.AggregateCatalog.Catalogs",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.componentmodel.composition.hosting.aggregatecatalog.catalogs",
+                "isCustom": false
+              }
+            ],
+            "line": 29,
+            "column": 24
+          }
+        },
+        {
+          "incidentId": "ea8a8e98-dc59-4f1d-892e-2608a468ae67",
+          "ruleId": "Api.0002",
+          "description": "API is available in package System.ComponentModel.Composition, 8.0.0.",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\PluginsManager.cs",
+            "snippet": "T:System.ComponentModel.Composition.Hosting.AggregateCatalog",
+            "label": "T:System.ComponentModel.Composition.Hosting.AggregateCatalog",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.componentmodel.composition.hosting.aggregatecatalog",
+                "isCustom": false
+              }
+            ],
+            "line": 21,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "b591f325-acd3-4c1e-8a4c-22e1d29068a4",
+          "ruleId": "Api.0002",
+          "description": "API is available in package System.ComponentModel.Composition, 8.0.0.",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\PluginsManager.cs",
+            "snippet": "M:System.ComponentModel.Composition.Hosting.AggregateCatalog.#ctor",
+            "label": "M:System.ComponentModel.Composition.Hosting.AggregateCatalog.#ctor",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.componentmodel.composition.hosting.aggregatecatalog.aggregatecatalog",
+                "isCustom": false
+              }
+            ],
+            "line": 21,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "bcd5bbc4-90e0-42d5-b05f-176158321d5c",
+          "ruleId": "Api.0002",
+          "description": "API is available in package System.ComponentModel.Composition, 8.0.0.",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\PluginsManager.cs",
+            "snippet": "M:System.ComponentModel.Composition.ImportManyAttribute.#ctor(System.Type)",
+            "label": "M:System.ComponentModel.Composition.ImportManyAttribute.#ctor(System.Type)",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.componentmodel.composition.importmanyattribute.importmanyattribute",
+                "isCustom": false
+              }
+            ],
+            "line": 16,
+            "column": 9
+          }
+        },
+        {
+          "incidentId": "ff58677f-a265-439e-8588-b82bd17e20e9",
+          "ruleId": "Api.0002",
+          "description": "API is available in package System.ComponentModel.Composition, 8.0.0.",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\PluginsManager.cs",
+            "snippet": "T:System.ComponentModel.Composition.ImportManyAttribute",
+            "label": "T:System.ComponentModel.Composition.ImportManyAttribute",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.componentmodel.composition.importmanyattribute",
+                "isCustom": false
+              }
+            ],
+            "line": 16,
+            "column": 9
+          }
+        },
+        {
+          "incidentId": "0974d58a-8c39-49ef-9c16-d916f2e2c4c0",
+          "ruleId": "Api.0002",
+          "description": "API is available in package System.ComponentModel.Composition, 8.0.0.",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\PluginsManager.cs",
+            "snippet": "T:System.ComponentModel.Composition.Hosting.CompositionContainer",
+            "label": "T:System.ComponentModel.Composition.Hosting.CompositionContainer",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.componentmodel.composition.hosting.compositioncontainer",
+                "isCustom": false
+              }
+            ],
+            "line": 14,
+            "column": 37
+          }
+        },
+        {
+          "incidentId": "9a88696d-23d6-425a-a0af-decaaa7a4ddc",
+          "ruleId": "Api.0002",
+          "description": "API is available in package System.ComponentModel.Composition, 8.0.0.",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\PluginsManager.cs",
+            "snippet": "T:System.ComponentModel.Composition.Hosting.CompositionContainer",
+            "label": "T:System.ComponentModel.Composition.Hosting.CompositionContainer",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.componentmodel.composition.hosting.compositioncontainer",
+                "isCustom": false
+              }
+            ],
+            "line": 39,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "551b0efc-41f6-4f0e-b932-ad25fc02ef38",
+          "ruleId": "Api.0002",
+          "description": "API is available in package System.ComponentModel.Composition, 8.0.0.",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\PluginsManager.cs",
+            "snippet": "T:System.ComponentModel.Composition.AttributedModelServices",
+            "label": "T:System.ComponentModel.Composition.AttributedModelServices",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.componentmodel.composition.attributedmodelservices",
+                "isCustom": false
+              }
+            ],
+            "line": 39,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "b36c58c7-7476-4a76-95e5-2bcfa3715444",
+          "ruleId": "Api.0002",
+          "description": "API is available in package System.ComponentModel.Composition, 8.0.0.",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\PluginsManager.cs",
+            "snippet": "M:System.ComponentModel.Composition.AttributedModelServices.ComposeParts(System.ComponentModel.Composition.Hosting.CompositionContainer,System.Object[])",
+            "label": "M:System.ComponentModel.Composition.AttributedModelServices.ComposeParts(System.ComponentModel.Composition.Hosting.CompositionContainer,System.Object[])",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.componentmodel.composition.attributedmodelservices.composeparts",
+                "isCustom": false
+              }
+            ],
+            "line": 39,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "0d2e20dc-2b9e-44d9-8285-88ef5287995b",
+          "ruleId": "Api.0002",
+          "description": "API is available in package System.ComponentModel.Composition, 8.0.0.",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\PluginsManager.cs",
+            "snippet": "T:System.ComponentModel.Composition.Hosting.CompositionContainer",
+            "label": "T:System.ComponentModel.Composition.Hosting.CompositionContainer",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.componentmodel.composition.hosting.compositioncontainer",
+                "isCustom": false
+              }
+            ],
+            "line": 38,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "62fc932f-324f-49d5-bc35-539cffd639af",
+          "ruleId": "Api.0002",
+          "description": "API is available in package System.ComponentModel.Composition, 8.0.0.",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\PluginsManager.cs",
+            "snippet": "M:System.ComponentModel.Composition.Hosting.CompositionContainer.#ctor(System.ComponentModel.Composition.Primitives.ComposablePartCatalog,System.ComponentModel.Composition.Hosting.ExportProvider[])",
+            "label": "M:System.ComponentModel.Composition.Hosting.CompositionContainer.#ctor(System.ComponentModel.Composition.Primitives.ComposablePartCatalog,System.ComponentModel.Composition.Hosting.ExportProvider[])",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.componentmodel.composition.hosting.compositioncontainer.compositioncontainer",
+                "isCustom": false
+              }
+            ],
+            "line": 38,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "907f7b38-cfb5-40b9-ab31-78e640fe2bc0",
+          "ruleId": "Api.0002",
+          "description": "API is available in package System.ComponentModel.Composition, 8.0.0.",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\PluginsManager.cs",
+            "snippet": "T:System.ComponentModel.Composition.Hosting.CompositionContainer",
+            "label": "T:System.ComponentModel.Composition.Hosting.CompositionContainer",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.componentmodel.composition.hosting.compositioncontainer",
+                "isCustom": false
+              }
+            ],
+            "line": 38,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "4cb4b005-e53e-4484-b85e-4d0ed1e841c8",
+          "ruleId": "Api.0002",
+          "description": "API is available in package System.ComponentModel.Composition, 8.0.0.",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\PluginsManager.cs",
+            "snippet": "T:System.ComponentModel.Composition.Hosting.DirectoryCatalog",
+            "label": "T:System.ComponentModel.Composition.Hosting.DirectoryCatalog",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.componentmodel.composition.hosting.directorycatalog",
+                "isCustom": false
+              }
+            ],
+            "line": 29,
+            "column": 24
+          }
+        },
+        {
+          "incidentId": "2ef70c4b-a8a1-47fb-add2-97d603bd4a2a",
+          "ruleId": "Api.0002",
+          "description": "API is available in package System.ComponentModel.Composition, 8.0.0.",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\PluginsManager.cs",
+            "snippet": "M:System.ComponentModel.Composition.Hosting.DirectoryCatalog.#ctor(System.String)",
+            "label": "M:System.ComponentModel.Composition.Hosting.DirectoryCatalog.#ctor(System.String)",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.componentmodel.composition.hosting.directorycatalog.directorycatalog",
+                "isCustom": false
+              }
+            ],
+            "line": 29,
+            "column": 24
+          }
+        },
+        {
+          "incidentId": "4eed163a-8882-452a-8298-9a8155e13fcf",
+          "ruleId": "Api.0002",
+          "description": "API is available in package System.ComponentModel.Composition, 8.0.0.",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\PluginsManager.cs",
+            "snippet": "P:System.ComponentModel.Composition.Hosting.AggregateCatalog.Catalogs",
+            "label": "P:System.ComponentModel.Composition.Hosting.AggregateCatalog.Catalogs",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.componentmodel.composition.hosting.aggregatecatalog.catalogs",
+                "isCustom": false
+              }
+            ],
+            "line": 29,
+            "column": 24
+          }
+        },
+        {
+          "incidentId": "48cb20c7-047a-450f-b333-ebee6b7985bd",
+          "ruleId": "Api.0002",
+          "description": "API is available in package System.ComponentModel.Composition, 8.0.0.",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\PluginsManager.cs",
+            "snippet": "T:System.ComponentModel.Composition.Hosting.AggregateCatalog",
+            "label": "T:System.ComponentModel.Composition.Hosting.AggregateCatalog",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.componentmodel.composition.hosting.aggregatecatalog",
+                "isCustom": false
+              }
+            ],
+            "line": 21,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "9dc1034d-dcf7-45ed-8db8-aad64e43b219",
+          "ruleId": "Api.0002",
+          "description": "API is available in package System.ComponentModel.Composition, 8.0.0.",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\PluginsManager.cs",
+            "snippet": "M:System.ComponentModel.Composition.Hosting.AggregateCatalog.#ctor",
+            "label": "M:System.ComponentModel.Composition.Hosting.AggregateCatalog.#ctor",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.componentmodel.composition.hosting.aggregatecatalog.aggregatecatalog",
+                "isCustom": false
+              }
+            ],
+            "line": 21,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "2621d7de-9b67-4cfc-885d-61e7a612f36c",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.DispatcherPriority",
+            "label": "T:System.Windows.Threading.DispatcherPriority",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcherpriority",
+                "isCustom": false
+              }
+            ],
+            "line": 244,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "127e9876-ce24-42ff-8900-22cc178fcfe4",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.DispatcherPriority",
+            "label": "T:System.Windows.Threading.DispatcherPriority",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcherpriority",
+                "isCustom": false
+              }
+            ],
+            "line": 244,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "c611ce75-11d4-4d39-91fd-c2bc44189a4b",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "F:System.Windows.Threading.DispatcherPriority.Input",
+            "label": "F:System.Windows.Threading.DispatcherPriority.Input",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcherpriority.input",
+                "isCustom": false
+              }
+            ],
+            "line": 244,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "a7595220-e3a4-4277-a767-b0a710669525",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.Dispatcher",
+            "label": "T:System.Windows.Threading.Dispatcher",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcher",
+                "isCustom": false
+              }
+            ],
+            "line": 244,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "ea1fef1f-b8fe-47a7-af4c-9503d44ea224",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.DispatcherOperation",
+            "label": "T:System.Windows.Threading.DispatcherOperation",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcheroperation",
+                "isCustom": false
+              }
+            ],
+            "line": 244,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "908e7005-b6b8-4d38-b30f-2376958a4c91",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "M:System.Windows.Threading.Dispatcher.BeginInvoke(System.Delegate,System.Windows.Threading.DispatcherPriority,System.Object[])",
+            "label": "M:System.Windows.Threading.Dispatcher.BeginInvoke(System.Delegate,System.Windows.Threading.DispatcherPriority,System.Object[])",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcher.begininvoke",
+                "isCustom": false
+              }
+            ],
+            "line": 244,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "98e75e1c-044a-4d95-9f90-1fa3432fc25f",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.Dispatcher",
+            "label": "T:System.Windows.Threading.Dispatcher",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcher",
+                "isCustom": false
+              }
+            ],
+            "line": 236,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "6a721da9-9171-4867-98f9-d7d50c91af34",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "M:System.Windows.Threading.Dispatcher.CheckAccess",
+            "label": "M:System.Windows.Threading.Dispatcher.CheckAccess",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcher.checkaccess",
+                "isCustom": false
+              }
+            ],
+            "line": 236,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "198f0c79-89cf-4e59-b725-902a994bf3eb",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "M:System.Windows.Threading.DispatcherTimer.Stop",
+            "label": "M:System.Windows.Threading.DispatcherTimer.Stop",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatchertimer.stop",
+                "isCustom": false
+              }
+            ],
+            "line": 168,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "9fad7b34-5ed4-4229-a131-5ad90de28d6c",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.DispatcherTimer",
+            "label": "T:System.Windows.Threading.DispatcherTimer",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatchertimer",
+                "isCustom": false
+              }
+            ],
+            "line": 168,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "272e29b7-be8d-4950-a053-03eefd887c81",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.DispatcherPriority",
+            "label": "T:System.Windows.Threading.DispatcherPriority",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcherpriority",
+                "isCustom": false
+              }
+            ],
+            "line": 145,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "acbf6029-f49a-4641-92db-596678efc632",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.DispatcherPriority",
+            "label": "T:System.Windows.Threading.DispatcherPriority",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcherpriority",
+                "isCustom": false
+              }
+            ],
+            "line": 145,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "72b00577-f334-4978-bb49-c6d075dfa937",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "F:System.Windows.Threading.DispatcherPriority.Input",
+            "label": "F:System.Windows.Threading.DispatcherPriority.Input",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcherpriority.input",
+                "isCustom": false
+              }
+            ],
+            "line": 145,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "40976668-cb9d-4b16-867d-281dc40ce1be",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.Dispatcher",
+            "label": "T:System.Windows.Threading.Dispatcher",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcher",
+                "isCustom": false
+              }
+            ],
+            "line": 145,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "586486ee-9997-418b-bcbd-ea9c5704efad",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.DispatcherOperation",
+            "label": "T:System.Windows.Threading.DispatcherOperation",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcheroperation",
+                "isCustom": false
+              }
+            ],
+            "line": 145,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "9ff6a6dc-c895-4672-9c99-b78de938350c",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "M:System.Windows.Threading.Dispatcher.BeginInvoke(System.Delegate,System.Windows.Threading.DispatcherPriority,System.Object[])",
+            "label": "M:System.Windows.Threading.Dispatcher.BeginInvoke(System.Delegate,System.Windows.Threading.DispatcherPriority,System.Object[])",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcher.begininvoke",
+                "isCustom": false
+              }
+            ],
+            "line": 145,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "853c45ab-dde8-47e4-a907-342216f1b168",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.Dispatcher",
+            "label": "T:System.Windows.Threading.Dispatcher",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcher",
+                "isCustom": false
+              }
+            ],
+            "line": 143,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "6904fccb-8fca-4b19-8037-c94eb506593a",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "M:System.Windows.Threading.Dispatcher.CheckAccess",
+            "label": "M:System.Windows.Threading.Dispatcher.CheckAccess",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcher.checkaccess",
+                "isCustom": false
+              }
+            ],
+            "line": 143,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "3f51d74e-0c24-415d-a383-2566057b2d84",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.DispatcherTimer",
+            "label": "T:System.Windows.Threading.DispatcherTimer",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatchertimer",
+                "isCustom": false
+              }
+            ],
+            "line": 117,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "177a015d-4152-47da-8b99-6fd1ceafc773",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "M:System.Windows.Threading.DispatcherTimer.Start",
+            "label": "M:System.Windows.Threading.DispatcherTimer.Start",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatchertimer.start",
+                "isCustom": false
+              }
+            ],
+            "line": 117,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "f3ffea07-169c-45d5-8f73-42e27fb1055b",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.DispatcherTimer",
+            "label": "T:System.Windows.Threading.DispatcherTimer",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatchertimer",
+                "isCustom": false
+              }
+            ],
+            "line": 115,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "c8048fbf-ea55-4a27-a867-1ed2c8abab5b",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "P:System.Windows.Threading.DispatcherTimer.Interval",
+            "label": "P:System.Windows.Threading.DispatcherTimer.Interval",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatchertimer.interval",
+                "isCustom": false
+              }
+            ],
+            "line": 115,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "8b76461c-ed95-43ea-b8aa-5fa07c3399c3",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.DispatcherTimer",
+            "label": "T:System.Windows.Threading.DispatcherTimer",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatchertimer",
+                "isCustom": false
+              }
+            ],
+            "line": 114,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "2b87da8d-c8e1-41f1-80b0-9d9e4ed55f76",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "E:System.Windows.Threading.DispatcherTimer.Tick",
+            "label": "E:System.Windows.Threading.DispatcherTimer.Tick",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatchertimer.tick",
+                "isCustom": false
+              }
+            ],
+            "line": 114,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "b31e5380-a0be-4f21-89cf-1fd91c89d514",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.Dispatcher",
+            "label": "T:System.Windows.Threading.Dispatcher",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcher",
+                "isCustom": false
+              }
+            ],
+            "line": 113,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "f7dc9536-b21a-4971-8eeb-b85bd2bc0929",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.DispatcherPriority",
+            "label": "T:System.Windows.Threading.DispatcherPriority",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcherpriority",
+                "isCustom": false
+              }
+            ],
+            "line": 113,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "0c7798dd-cfff-4641-b066-a1f207daa974",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.DispatcherPriority",
+            "label": "T:System.Windows.Threading.DispatcherPriority",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcherpriority",
+                "isCustom": false
+              }
+            ],
+            "line": 113,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "2415b7b7-0331-47b9-b6a8-01fac9edd9b8",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "F:System.Windows.Threading.DispatcherPriority.Background",
+            "label": "F:System.Windows.Threading.DispatcherPriority.Background",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcherpriority.background",
+                "isCustom": false
+              }
+            ],
+            "line": 113,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "8ed54e16-5840-441a-b166-54a3b580e3a8",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.DispatcherTimer",
+            "label": "T:System.Windows.Threading.DispatcherTimer",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatchertimer",
+                "isCustom": false
+              }
+            ],
+            "line": 113,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "532a9431-ee5e-46fc-a898-d2e5ab0cf3dd",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "M:System.Windows.Threading.DispatcherTimer.#ctor(System.Windows.Threading.DispatcherPriority,System.Windows.Threading.Dispatcher)",
+            "label": "M:System.Windows.Threading.DispatcherTimer.#ctor(System.Windows.Threading.DispatcherPriority,System.Windows.Threading.Dispatcher)",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatchertimer.dispatchertimer",
+                "isCustom": false
+              }
+            ],
+            "line": 113,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "11f9a483-c8ea-482d-a9a8-fcb76a00d68d",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.DispatcherTimer",
+            "label": "T:System.Windows.Threading.DispatcherTimer",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatchertimer",
+                "isCustom": false
+              }
+            ],
+            "line": 113,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "4bdc452f-c2c3-40ae-9ffa-5ccb856a4d6d",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "M:System.Windows.Threading.DispatcherTimer.Stop",
+            "label": "M:System.Windows.Threading.DispatcherTimer.Stop",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatchertimer.stop",
+                "isCustom": false
+              }
+            ],
+            "line": 112,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "8ba5ccca-fbb2-409c-b53e-87322afc8627",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.DispatcherTimer",
+            "label": "T:System.Windows.Threading.DispatcherTimer",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatchertimer",
+                "isCustom": false
+              }
+            ],
+            "line": 112,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "a8105a97-d054-49c2-a790-d1da5a4927d3",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.DispatcherPriority",
+            "label": "T:System.Windows.Threading.DispatcherPriority",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcherpriority",
+                "isCustom": false
+              }
+            ],
+            "line": 72,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "6d03e9bf-47e2-426e-aba8-b9cf90114253",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.DispatcherPriority",
+            "label": "T:System.Windows.Threading.DispatcherPriority",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcherpriority",
+                "isCustom": false
+              }
+            ],
+            "line": 72,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "359995ba-9706-46fa-a75f-6f1ab37ce39b",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "F:System.Windows.Threading.DispatcherPriority.Input",
+            "label": "F:System.Windows.Threading.DispatcherPriority.Input",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcherpriority.input",
+                "isCustom": false
+              }
+            ],
+            "line": 72,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "3eb110f1-fc56-4fe6-bfdb-4c30dd7f61c1",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.Dispatcher",
+            "label": "T:System.Windows.Threading.Dispatcher",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcher",
+                "isCustom": false
+              }
+            ],
+            "line": 72,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "7994d239-9a01-49e9-a37e-53292b2a384c",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.DispatcherOperation",
+            "label": "T:System.Windows.Threading.DispatcherOperation",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcheroperation",
+                "isCustom": false
+              }
+            ],
+            "line": 72,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "ff825958-a1b2-4d64-a192-12173b296661",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "M:System.Windows.Threading.Dispatcher.BeginInvoke(System.Delegate,System.Windows.Threading.DispatcherPriority,System.Object[])",
+            "label": "M:System.Windows.Threading.Dispatcher.BeginInvoke(System.Delegate,System.Windows.Threading.DispatcherPriority,System.Object[])",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcher.begininvoke",
+                "isCustom": false
+              }
+            ],
+            "line": 72,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "de7a4bbc-3dda-4463-910c-80e3352e6a6d",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.Dispatcher",
+            "label": "T:System.Windows.Threading.Dispatcher",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcher",
+                "isCustom": false
+              }
+            ],
+            "line": 70,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "5b6b4e21-1ab2-482d-92d5-c80af66ee00c",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "M:System.Windows.Threading.Dispatcher.CheckAccess",
+            "label": "M:System.Windows.Threading.Dispatcher.CheckAccess",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcher.checkaccess",
+                "isCustom": false
+              }
+            ],
+            "line": 70,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "c664b796-3716-420e-8cec-c8ac7543de92",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.Dispatcher",
+            "label": "T:System.Windows.Threading.Dispatcher",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcher",
+                "isCustom": false
+              }
+            ],
+            "line": 60,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "19093d57-e750-447a-97fc-0bf4e84a3ecd",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.Dispatcher",
+            "label": "T:System.Windows.Threading.Dispatcher",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcher",
+                "isCustom": false
+              }
+            ],
+            "line": 60,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "a52bcb63-06cd-43a7-b8f2-0e0d3ea501bf",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "P:System.Windows.Threading.Dispatcher.CurrentDispatcher",
+            "label": "P:System.Windows.Threading.Dispatcher.CurrentDispatcher",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcher.currentdispatcher",
+                "isCustom": false
+              }
+            ],
+            "line": 60,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "cc0551e9-bed0-4289-a868-137b9c53b835",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.Dispatcher",
+            "label": "T:System.Windows.Threading.Dispatcher",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcher",
+                "isCustom": false
+              }
+            ],
+            "line": 60,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "2efad7ff-c229-4738-af05-1f307d5de11f",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.Dispatcher",
+            "label": "T:System.Windows.Threading.Dispatcher",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcher",
+                "isCustom": false
+              }
+            ],
+            "line": 39,
+            "column": 36
+          }
+        },
+        {
+          "incidentId": "860b4a71-49ec-44b0-8a61-7cbc8207c1e2",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.DispatcherTimer",
+            "label": "T:System.Windows.Threading.DispatcherTimer",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatchertimer",
+                "isCustom": false
+              }
+            ],
+            "line": 37,
+            "column": 32
+          }
+        },
+        {
+          "incidentId": "ba4ecddd-e0c6-4d25-a457-d5d6b38a5c9d",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.Dispatcher",
+            "label": "T:System.Windows.Threading.Dispatcher",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcher",
+                "isCustom": false
+              }
+            ],
+            "line": 60,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "03d8c614-0384-415b-94b9-16aa8bb37669",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.Dispatcher",
+            "label": "T:System.Windows.Threading.Dispatcher",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcher",
+                "isCustom": false
+              }
+            ],
+            "line": 60,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "16485838-eb77-42f0-a620-1b407ba9d319",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "P:System.Windows.Threading.Dispatcher.CurrentDispatcher",
+            "label": "P:System.Windows.Threading.Dispatcher.CurrentDispatcher",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcher.currentdispatcher",
+                "isCustom": false
+              }
+            ],
+            "line": 60,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "9c7ea554-0024-493c-834f-00d4259ae8b1",
+          "ruleId": "Api.0001",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Managers\\BindingManager.cs",
+            "snippet": "T:System.Windows.Threading.Dispatcher",
+            "label": "T:System.Windows.Threading.Dispatcher",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.windows.threading.dispatcher",
+                "isCustom": false
+              }
+            ],
+            "line": 60,
+            "column": 12
+          }
+        },
+        {
+          "incidentId": "d3de1ae7-64ba-4e58-9430-b43f7f1f743c",
+          "ruleId": "Api.0003",
+          "description": "BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.",
+          "projectPath": "UCR.Core\\UCR.Core.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Core\\Context.cs",
+            "snippet": "T:System.Runtime.Serialization.Formatters.Binary.BinaryFormatter",
+            "label": "T:System.Runtime.Serialization.Formatters.Binary.BinaryFormatter",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://learn.microsoft.com/dotnet/api/system.runtime.serialization.formatters.binary.binaryformatter",
+                "isCustom": false
+              },
+              {
+                "title": "https://aka.ms/dotnet-warnings/SYSLIB0011",
+                "url": "https://aka.ms/dotnet-warnings/SYSLIB0011",
+                "isCustom": true
+              }
+            ],
+            "line": 175,
+            "column": 16
+          }
+        }
+      ]
+    },
+    {
+      "path": "UCR\\UCR.csproj",
+      "startingProject": true,
+      "issues": 5,
+      "storyPoints": 7,
+      "ruleInstances": [
+        {
+          "incidentId": "a6a1c551-dcb8-4156-b742-9a8f95d04ab6",
+          "ruleId": "NuGet.0001",
+          "projectPath": "UCR\\UCR.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR\\UCR.csproj",
+            "snippet": "MaterialDesignColors, 1.1.2\n\nRecommendation:\n\nMaterialDesignColors, 5.2.1",
+            "label": "MaterialDesignColors 1.1.2",
+            "properties": {
+              "PackageId": "MaterialDesignColors",
+              "PackageVersion": "1.1.2",
+              "PackageNewVersion": "5.2.1",
+              "PackageReplacements": null
+            }
+          }
+        },
+        {
+          "incidentId": "903d1e54-4d00-4a06-93bb-a5d1be3e23f9",
+          "ruleId": "NuGet.0001",
+          "projectPath": "UCR\\UCR.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR\\UCR.csproj",
+            "snippet": "MaterialDesignThemes, 2.5.1\n\nRecommendation:\n\nMaterialDesignThemes, 5.2.1",
+            "label": "MaterialDesignThemes 2.5.1",
+            "properties": {
+              "PackageId": "MaterialDesignThemes",
+              "PackageVersion": "2.5.1",
+              "PackageNewVersion": "5.2.1",
+              "PackageReplacements": null
+            }
+          }
+        },
+        {
+          "incidentId": "de2fad83-36d0-4641-beb4-06410219f91a",
+          "ruleId": "NuGet.0001",
+          "projectPath": "UCR\\UCR.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR\\UCR.csproj",
+            "snippet": "RestSharp, 105.2.3\n\nRecommendation:\n\nRestSharp, 114.0.0",
+            "label": "RestSharp 105.2.3",
+            "properties": {
+              "PackageId": "RestSharp",
+              "PackageVersion": "105.2.3",
+              "PackageNewVersion": "114.0.0",
+              "PackageReplacements": null
+            }
+          }
+        },
+        {
+          "incidentId": "19b92764-b6b4-40da-ad58-2bcd08c0fa32",
+          "ruleId": "NuGet.0005",
+          "projectPath": "UCR\\UCR.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR\\UCR.csproj",
+            "snippet": "GitVersionTask, 4.0.0\n\nRecommendation:\n\nGitVersion.MsBuild is compatible with GitVersionTask in terms of usage\nReplacement: GitVersionTask, 5.5.1",
+            "label": "GitVersionTask 4.0.0",
+            "properties": {
+              "PackageId": "GitVersionTask",
+              "PackageVersion": "4.0.0",
+              "PackageNewVersion": null,
+              "PackageReplacements": null
+            }
+          }
+        },
+        {
+          "incidentId": "1b9ca57e-9f1f-4ab6-b3ac-16f5444fb6c0",
+          "ruleId": "NuGet.0004",
+          "projectPath": "UCR\\UCR.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR\\UCR.csproj",
+            "snippet": "RestSharp, 105.2.3\n\nRecommendation:\n\nRestSharp, 114.0.0",
+            "label": "RestSharp 105.2.3",
+            "properties": {
+              "PackageId": "RestSharp",
+              "PackageVersion": "105.2.3",
+              "PackageNewVersion": "114.0.0",
+              "PackageReplacements": null
+            }
+          }
+        },
+        {
+          "incidentId": "77cdbf3e-e3a2-4229-b89e-dbb055f1c27b",
+          "ruleId": "Project.0001",
+          "projectPath": "UCR\\UCR.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR\\UCR.csproj"
+          }
+        },
+        {
+          "incidentId": "44913ed4-8231-4399-afdb-c91e5e2c2d6b",
+          "ruleId": "Project.0002",
+          "projectPath": "UCR\\UCR.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR\\UCR.csproj",
+            "snippet": "Current target framework: .NETFramework,Version=v4.5.2\nRecommended target framework: net8.0-windows"
+          }
+        }
+      ]
+    },
+    {
+      "path": "UCR.FileHandler\\UCR.FileHandler.csproj",
+      "startingProject": true,
+      "issues": 2,
+      "storyPoints": 2,
+      "ruleInstances": [
+        {
+          "incidentId": "dd4047fc-d70d-426f-a981-ec06f5526621",
+          "ruleId": "Project.0001",
+          "projectPath": "UCR.FileHandler\\UCR.FileHandler.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.FileHandler\\UCR.FileHandler.csproj"
+          }
+        },
+        {
+          "incidentId": "5f1bd535-0f38-4320-acd2-b61da6d66444",
+          "ruleId": "Project.0002",
+          "projectPath": "UCR.FileHandler\\UCR.FileHandler.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.FileHandler\\UCR.FileHandler.csproj",
+            "snippet": "Current target framework: .NETFramework,Version=v4.6.1\nRecommended target framework: net8.0-windows"
+          }
+        }
+      ]
+    },
+    {
+      "path": "UCR.Plugins\\UCR.Plugins.csproj",
+      "startingProject": true,
+      "issues": 2,
+      "storyPoints": 2,
+      "ruleInstances": [
+        {
+          "incidentId": "501ac50d-9b21-483c-ae8b-80dda8b788ec",
+          "ruleId": "Project.0001",
+          "projectPath": "UCR.Plugins\\UCR.Plugins.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Plugins\\UCR.Plugins.csproj"
+          }
+        },
+        {
+          "incidentId": "bdc50b8b-98d4-439e-b4b4-b3cd99590381",
+          "ruleId": "Project.0002",
+          "projectPath": "UCR.Plugins\\UCR.Plugins.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Plugins\\UCR.Plugins.csproj",
+            "snippet": "Current target framework: .NETFramework,Version=v4.5.2\nRecommended target framework: net8.0-windows"
+          }
+        }
+      ]
+    },
+    {
+      "path": "UCR.Tests\\UCR.Tests.csproj",
+      "startingProject": true,
+      "issues": 3,
+      "storyPoints": 4,
+      "ruleInstances": [
+        {
+          "incidentId": "d4b4482e-a5f9-4ca7-824d-7fc7603dbe85",
+          "ruleId": "NuGet.0001",
+          "projectPath": "UCR.Tests\\UCR.Tests.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Tests\\UCR.Tests.csproj",
+            "snippet": "MaterialDesignColors, 1.1.2\n\nRecommendation:\n\nMaterialDesignColors, 5.2.1",
+            "label": "MaterialDesignColors 1.1.2",
+            "properties": {
+              "PackageId": "MaterialDesignColors",
+              "PackageVersion": "1.1.2",
+              "PackageNewVersion": "5.2.1",
+              "PackageReplacements": null
+            }
+          }
+        },
+        {
+          "incidentId": "45bc4f1c-bcae-481b-a43a-14c049e4c92a",
+          "ruleId": "NuGet.0001",
+          "projectPath": "UCR.Tests\\UCR.Tests.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Tests\\UCR.Tests.csproj",
+            "snippet": "MaterialDesignThemes, 2.5.1\n\nRecommendation:\n\nMaterialDesignThemes, 5.2.1",
+            "label": "MaterialDesignThemes 2.5.1",
+            "properties": {
+              "PackageId": "MaterialDesignThemes",
+              "PackageVersion": "2.5.1",
+              "PackageNewVersion": "5.2.1",
+              "PackageReplacements": null
+            }
+          }
+        },
+        {
+          "incidentId": "a8a15f72-a3b3-4b5a-bf37-3f58a311146e",
+          "ruleId": "Project.0001",
+          "projectPath": "UCR.Tests\\UCR.Tests.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Tests\\UCR.Tests.csproj"
+          }
+        },
+        {
+          "incidentId": "c062858e-6d81-4bfb-a74d-d0cc37509bac",
+          "ruleId": "Project.0002",
+          "projectPath": "UCR.Tests\\UCR.Tests.csproj",
+          "state": "Active",
+          "location": {
+            "kind": "File",
+            "path": "UCR.Tests\\UCR.Tests.csproj",
+            "snippet": "Current target framework: .NETFramework,Version=v4.5.2\nRecommended target framework: net8.0-windows"
+          }
+        }
+      ]
+    }
+  ],
+  "rules": {
+    "NuGet.0001": {
+      "id": "NuGet.0001",
+      "isFeature": false,
+      "description": "NuGet package is incompatible with selected target framework.\n\nPackage needs to be upgraded to a version supporting selected project target framework. If there no new package versions supporting new target framework, different package needs to be used and all code needs to be upgraded to new API.",
+      "label": "NuGet package is incompatible",
+      "severity": "Mandatory",
+      "effort": 1,
+      "links": [
+        {
+          "url": "https://go.microsoft.com/fwlink/?linkid=2262529",
+          "isCustom": false
+        }
+      ]
+    },
+    "NuGet.0004": {
+      "id": "NuGet.0004",
+      "isFeature": false,
+      "description": "NuGet package contains security vulnerabilities.\n\nPackage needs to be upgraded to a newer version that addresses known security vulnerabilities.",
+      "label": "NuGet package contains security vulnerability",
+      "severity": "Optional",
+      "effort": 1
+    },
+    "Project.0002": {
+      "id": "Project.0002",
+      "isFeature": false,
+      "description": "Project\u0027s target framework(s) needs to be changed to the new target framework that you selected for this upgrade.\n\nDuring upgrade target framework will be adjusted to corresponding platform when applicable. In some cases project would result in multiple target frameworks after the upgrade if it was using features that now have their own platforms in modern .NET frameworks (windows, iOS, Android etc).",
+      "label": "Project\u0027s target framework(s) needs to be changed",
+      "severity": "Mandatory",
+      "effort": 1,
+      "links": [
+        {
+          "title": "Overview of porting from .NET Framework to .NET",
+          "url": "https://go.microsoft.com/fwlink/?linkid=2265227",
+          "isCustom": false
+        },
+        {
+          "title": ".NET project SDKs",
+          "url": "https://go.microsoft.com/fwlink/?linkid=2265226",
+          "isCustom": false
+        }
+      ]
+    },
+    "NuGet.0002": {
+      "id": "NuGet.0002",
+      "isFeature": false,
+      "description": "NuGet package upgrade is recommended for selected target framework.\n\nStandard .NET packages are recommended to have versions matching version of .NET that project targets.\n\nSome other packages also are known to work better for selected target frameworks.",
+      "label": "NuGet package upgrade is recommended",
+      "severity": "Potential",
+      "effort": 1,
+      "links": [
+        {
+          "url": "https://go.microsoft.com/fwlink/?linkid=2262530",
+          "isCustom": false
+        }
+      ]
+    },
+    "NuGet.0005": {
+      "id": "NuGet.0005",
+      "isFeature": false,
+      "description": "NuGet package is deprecated.\n\nGo to its documentation and if there is a guidance for replacement of functionality provided by this package.",
+      "label": "NuGet package is deprecated",
+      "severity": "Optional",
+      "effort": 1,
+      "links": [
+        {
+          "url": "https://go.microsoft.com/fwlink/?linkid=2262531",
+          "isCustom": false
+        }
+      ]
+    },
+    "Project.0001": {
+      "id": "Project.0001",
+      "isFeature": false,
+      "description": "Project file needs to be converted to SDK-style. Modern .NET framework projects require a change in the project file format and use SDK corresponding to project flavor and functionality.",
+      "label": "Project file needs to be converted to SDK-style",
+      "severity": "Mandatory",
+      "effort": 1,
+      "links": [
+        {
+          "title": "Overview of porting from .NET Framework to .NET",
+          "url": "https://go.microsoft.com/fwlink/?linkid=2265227",
+          "isCustom": false
+        },
+        {
+          "title": ".NET project SDKs",
+          "url": "https://go.microsoft.com/fwlink/?linkid=2265226",
+          "isCustom": false
+        }
+      ]
+    },
+    "Api.0001": {
+      "id": "Api.0001",
+      "isFeature": false,
+      "description": "API does not exist in the selected version of .NET. See breaking changes documentation for alternative or replacement functionality.",
+      "label": "API does not exist",
+      "severity": "Mandatory",
+      "effort": 1,
+      "links": [
+        {
+          "title": "Breaking changes in .NET",
+          "url": "https://go.microsoft.com/fwlink/?linkid=2262679",
+          "isCustom": false
+        }
+      ]
+    },
+    "Api.0002": {
+      "id": "Api.0002",
+      "isFeature": false,
+      "description": "Some API that lived in older versions of .NET frameworks were moved to standalone NuGet packages that could be added to projects explicitly.",
+      "label": "API available in NuGet package",
+      "severity": "Potential",
+      "effort": 1,
+      "links": [
+        {
+          "title": "Breaking changes in .NET",
+          "url": "https://go.microsoft.com/fwlink/?linkid=2262679",
+          "isCustom": false
+        }
+      ]
+    },
+    "Api.0003": {
+      "id": "Api.0003",
+      "isFeature": false,
+      "description": "API is obsolete.",
+      "label": "API is obsolete",
+      "severity": "Optional",
+      "effort": 1
+    }
+  }
+}

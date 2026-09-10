@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -17,6 +17,7 @@ using System.Windows.Threading;
 using HidWizards.UCR.Core;
 using HidWizards.UCR.Core.Managers;
 using HidWizards.UCR.Core.Models;
+using HidWizards.UCR.Core.Persistence;
 using HidWizards.UCR.Core.Utilities;
 using HidWizards.UCR.Utilities;
 using HidWizards.UCR.ViewModels.Dashboard;
