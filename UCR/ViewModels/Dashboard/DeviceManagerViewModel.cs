@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -244,9 +244,17 @@ namespace HidWizards.UCR.ViewModels.Dashboard
         {
             if (devicesManager == null) throw new ArgumentNullException(nameof(devicesManager));
             _devicesManager = devicesManager;
+            _devicesManager.DeviceListChanged += OnDeviceListChanged;
             Devices = new ObservableCollection<DeviceManagerItemViewModel>();
             Populate();
         }
+
+        private void OnDeviceListChanged()
+        {
+            App.Current.Dispatcher.Invoke(() => Populate());
+        }
+
+
 
         private void Populate(bool preservePendingPresentation = false)
         {
@@ -542,6 +550,7 @@ namespace HidWizards.UCR.ViewModels.Dashboard
         {
             if (_disposed) return;
             _disposed = true;
+            _devicesManager.DeviceListChanged -= OnDeviceListChanged;
             if (_detectionCancellation != null)
             {
                 _detectionCancellation.Cancel();

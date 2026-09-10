@@ -23,6 +23,7 @@ namespace HidWizards.UCR.Core
         /* Persistence */
         public List<Profile> Profiles { get; set; }
         public List<DeviceAlias> DeviceAliases { get; set; }
+        public List<DeviceGroup> DeviceGroups { get; set; }
 
         /* Runtime */
         [XmlIgnore] public Profile ActiveProfile { get; set; }
@@ -32,12 +33,21 @@ namespace HidWizards.UCR.Core
         [XmlIgnore] public PluginsManager PluginManager { get; set; }
         [XmlIgnore] public BindingManager BindingManager { get; set; }
         [XmlIgnore] public HidWizards.UCR.Core.Services.DeviceAliasService DeviceAliasService { get; set; }
+        [XmlIgnore] public HidWizards.UCR.Core.Services.DeviceGroupService DeviceGroupService { get; set; }
 
         public delegate void ActiveProfileChanged(Profile profile);
         public event ActiveProfileChanged ActiveProfileChangedEvent;
 
         public delegate void DeviceAliasesChanged();
         public event DeviceAliasesChanged DeviceAliasesChangedEvent;
+        
+        public delegate void DeviceListChanged();
+        public event DeviceListChanged DeviceListChangedEvent;
+
+        public void InvokeDeviceListChanged()
+        {
+            DeviceListChangedEvent?.Invoke();
+        }
         
         internal bool IsNotSaved { get; private set; }
         internal IOController IOController { get; set; }
@@ -60,6 +70,7 @@ namespace HidWizards.UCR.Core
             IsNotSaved = false;
             Profiles = new List<Profile>();
             DeviceAliases = new List<DeviceAlias>();
+            DeviceGroups = new List<DeviceGroup>();
 
             try
             {
@@ -71,6 +82,7 @@ namespace HidWizards.UCR.Core
             }
             
             DeviceAliasService = new HidWizards.UCR.Core.Services.DeviceAliasService(this);
+            DeviceGroupService = new HidWizards.UCR.Core.Services.DeviceGroupService(this);
             ProfilesManager = new ProfilesManager(this, Profiles);
             DevicesManager = new DevicesManager(this);
             SubscriptionsManager = new SubscriptionsManager(this);
@@ -133,6 +145,7 @@ namespace HidWizards.UCR.Core
         {
             if (Profiles == null) Profiles = new List<Profile>();
             if (DeviceAliases == null) DeviceAliases = new List<DeviceAlias>();
+            if (DeviceGroups == null) DeviceGroups = new List<DeviceGroup>();
 
             foreach (var profile in Profiles)
             {

@@ -52,7 +52,7 @@ namespace HidWizards.UCR.ViewModels.ProfileViewModels
     {
         public string MappingTitle => Mapping.FullTitle;
         public ProfileViewModel ProfileViewModel { get; }
-        public Mapping Mapping { get; set; }
+        public Core.Models.Mapping Mapping { get; set; }
         public ObservableCollection<PluginViewModel> Plugins { get; set; }
         public ObservableCollection<DeviceBindingViewModel> DeviceBindings { get; set; }
         public bool ButtonsEnabled => !ProfileViewModel.Profile.IsActive();
@@ -201,7 +201,7 @@ namespace HidWizards.UCR.ViewModels.ProfileViewModels
             }
         }
 
-        public MappingViewModel(ProfileViewModel profileViewModel, Mapping mapping)
+        public MappingViewModel(ProfileViewModel profileViewModel, Core.Models.Mapping mapping)
         {
             ProfileViewModel = profileViewModel;
             Mapping = mapping;
@@ -335,7 +335,7 @@ namespace HidWizards.UCR.ViewModels.ProfileViewModels
             if (Plugins.Count == 0) DeviceBindings.Clear();
         }
 
-        private void PopulatePlugins(Mapping mapping)
+        private void PopulatePlugins(Core.Models.Mapping mapping)
         {
             Plugins = new ObservableCollection<PluginViewModel>();
             foreach (var mappingPlugin in mapping.Plugins)

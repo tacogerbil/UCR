@@ -60,6 +60,10 @@ namespace HidWizards.UCR.Views
             Context = context;
             ProfileWindows = new Dictionary<Guid, ProfileWindow>();
             InitializeComponent();
+            
+            DevicesViewElement.DataContext = new HidWizards.UCR.ViewModels.Devices.DevicesViewModel(context);
+            MappingViewElement.DataContext = new HidWizards.UCR.ViewModels.Mapping.MappingViewModel(context);
+            
             InitializeTrayIcon();
             _autoProfileMonitor = new AutoProfileMonitor(context);
         }
@@ -557,7 +561,7 @@ namespace HidWizards.UCR.Views
 
         private void ManageDevices_OnClick(object sender, RoutedEventArgs e)
         {
-            var page = new DeviceManagerPage(Context.DevicesManager);
+            var page = new HidWizards.UCR.Views.Devices.DevicesView { DataContext = new HidWizards.UCR.ViewModels.Devices.DevicesViewModel(Context) };
             page.BackRequested += NavigationPage_OnBackRequested;
             ShowNavigationPage(page);
         }
@@ -984,6 +988,11 @@ namespace HidWizards.UCR.Views
 
         private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
+            if (msg == NativeMethods.WM_DEVICECHANGE)
+            {
+                Context?.InvokeDeviceListChanged();
+            }
+
             if (msg != NativeMethods.WM_COPYDATA) return IntPtr.Zero;
             
             var data = (NativeMethods.COPYDATASTRUCT)Marshal.PtrToStructure(lParam, typeof(NativeMethods.COPYDATASTRUCT));
