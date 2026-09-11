@@ -49,11 +49,10 @@ namespace HidWizards.UCR.Core.Managers
             return true;
         }
 
-        public bool CopyProfile(Profile profile, string title = "Untitled")
+        public Profile CopyProfile(Profile profile, string title = "Untitled")
         {
             var newProfile = Context.DeepXmlClone<Profile>(profile);
             newProfile.Title = title;
-            newProfile.Guid = Guid.NewGuid();
             newProfile.PostLoad(_context, profile.ParentProfile);
 
             if (profile.ParentProfile != null)
@@ -65,13 +64,11 @@ namespace HidWizards.UCR.Core.Managers
                 _profiles.Add(newProfile);
             }
 
-            // TODO Fix Configuration Guid and referenced DeviceBinding Guids
-            //newProfile.InputDeviceConfigurations.ForEach(configuration => configuration.Guid = Guid.NewGuid());
-            //newProfile.OutputDeviceConfigurations.ForEach(configuration => configuration.Guid = Guid.NewGuid());
+            RegenerateIdentities(new[] { newProfile });
 
             _context.ContextChanged();
 
-            return true;
+            return newProfile;
         }
 
         #region Import / Export

@@ -46,7 +46,7 @@ namespace HidWizards.UCR.Core.Services
         {
             if (device == null || string.IsNullOrWhiteSpace(device.ProviderName)) return false;
             if (string.Equals(device.ProviderName, "Core_Interception", StringComparison.OrdinalIgnoreCase))
-                return !string.IsNullOrWhiteSpace(BuildLogicalDeviceKey(device));
+                return !string.IsNullOrWhiteSpace(DeviceIdentity.BuildLogicalKey(device));
             if (!string.IsNullOrWhiteSpace(device.HidPath)) return true;
             if (UsesLogicalSlotIdentity(device.ProviderName)) return !string.IsNullOrWhiteSpace(device.DeviceHandle);
             if (string.IsNullOrWhiteSpace(device.DeviceHandle)) return false;
@@ -400,14 +400,6 @@ namespace HidWizards.UCR.Core.Services
             return string.Equals(providerName, "Core_vJoyInterfaceWrap", StringComparison.OrdinalIgnoreCase) ||
                    string.Equals(providerName, "Core_ViGEm", StringComparison.OrdinalIgnoreCase) ||
                    string.Equals(providerName, "Core_TitanOne", StringComparison.OrdinalIgnoreCase);
-        }
-
-        private static string BuildLogicalDeviceKey(Device device)
-        {
-            if (device == null || string.IsNullOrWhiteSpace(device.DeviceHandle)) return string.Empty;
-            var start = device.DeviceHandle.IndexOf('{');
-            if (start < 0) return string.Empty;
-            return device.DeviceHandle.Substring(start);
         }
     }
 }

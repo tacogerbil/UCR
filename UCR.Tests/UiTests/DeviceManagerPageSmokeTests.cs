@@ -15,6 +15,7 @@ namespace HidWizards.UCR.Tests.UiTests
 {
     [TestFixture]
     [NonParallelizable]
+    [Apartment(ApartmentState.STA)]
     internal class DeviceManagerPageSmokeTests
     {
         private sealed class FakeDevicePageViewModel

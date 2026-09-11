@@ -23,6 +23,22 @@ namespace HidWizards.UCR.ViewModels.Mapping
         public string Title { get; }
         public string TargetOutputKey { get; }
         public bool IsAxis { get; }
+
+        public ObservableCollection<PluginSummaryViewModel> Plugins { get; }
+
+        private bool _isAdvancedExpanded;
+        public bool IsAdvancedExpanded
+        {
+            get => _isAdvancedExpanded;
+            set
+            {
+                if (_isAdvancedExpanded != value)
+                {
+                    _isAdvancedExpanded = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
         
         public InputScopeItem CurrentScope { get; set; }
         public ObservableCollection<InputScopeItem> FullCatalog { get; set; }
@@ -40,6 +56,12 @@ namespace HidWizards.UCR.ViewModels.Mapping
             
             ListenCommand = new RelayCommand(ExecuteListen);
             ClearCommand = new RelayCommand(ExecuteClear);
+
+            Plugins = new ObservableCollection<PluginSummaryViewModel>();
+            foreach (var plugin in _mapping.Plugins)
+            {
+                Plugins.Add(new PluginSummaryViewModel(plugin));
+            }
         }
 
         private bool _isListening;

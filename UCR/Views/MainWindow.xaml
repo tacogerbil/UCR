@@ -105,28 +105,69 @@
                     <ComboBox x:Name="InputScopeCombo" 
                               materialDesign:HintAssist.Hint="INPUT SCOPE"
                               Width="180" Margin="0,0,16,0"
-                              ItemsSource="{Binding InputSources}"
-                              SelectedItem="{Binding SelectedInputScope}"
+                              ItemsSource="{Binding Dashboard.InputSources}"
+                              SelectedItem="{Binding Dashboard.SelectedInputScope}"
                               DisplayMemberPath="DisplayName" />
 
                     <!-- GAME PROFILE CHIP -->
-                    <Button x:Name="GameProfileBtn" Style="{StaticResource MaterialDesignOutlinedButton}" 
-                            Click="GameProfile_OnClick"
-                            Margin="0,0,16,0"
-                            BorderBrush="{DynamicResource PrimaryHueMidBrush}" 
-                            Foreground="{DynamicResource PrimaryHueMidBrush}"
-                            ToolTip="Select or create a game profile">
-                        <Button.Content>
-                            <TextBlock Text="{Binding SelectedProfileItem.Title, TargetNullValue='+ Press to create game profile', FallbackValue='+ Press to create game profile'}"/>
-                        </Button.Content>
-                    </Button>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,16,0">
+                        <Grid>
+                            <Rectangle Stroke="{DynamicResource PrimaryHueMidBrush}" StrokeThickness="1" StrokeDashArray="4,4"
+                                       RadiusX="3" RadiusY="3" IsHitTestVisible="False">
+                                <Rectangle.Style>
+                                    <Style TargetType="Rectangle">
+                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Dashboard.SelectedProfileItem}" Value="{x:Null}">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Rectangle.Style>
+                            </Rectangle>
+
+                            <Button x:Name="GameProfileBtn" 
+                                    Command="{Binding GameProfileCommand}"
+                                    BorderBrush="{DynamicResource PrimaryHueMidBrush}" 
+                                    Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                    ToolTip="Select or create a game profile">
+                                <Button.Style>
+                                    <Style TargetType="Button" BasedOn="{StaticResource MaterialDesignOutlinedButton}">
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Dashboard.SelectedProfileItem}" Value="{x:Null}">
+                                                <Setter Property="BorderBrush" Value="Transparent"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                                <Button.Content>
+                                    <TextBlock Text="{Binding Dashboard.SelectedProfileItem.ChipTitle, TargetNullValue='+ Select or create game profile', FallbackValue='+ Select or create game profile'}"/>
+                                </Button.Content>
+                            </Button>
+                        </Grid>
+                        <Button Command="{Binding EditProfileCommand}"
+                                ToolTip="Edit profile"
+                                Margin="4,0,0,0">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource MaterialDesignToolButton}">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Dashboard.SelectedProfileItem}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                            <materialDesign:PackIcon Kind="Pencil" />
+                        </Button>
+                    </StackPanel>
 
                     <!-- OUTPUT DEVICE DROPDOWN -->
                     <ComboBox x:Name="OutputDeviceCombo" 
                               materialDesign:HintAssist.Hint="OUTPUT DEVICE"
                               Width="180" Margin="0,0,16,0"
-                              ItemsSource="{Binding OutputDeviceControlViewModel.Devices}"
-                              SelectedItem="{Binding OutputDeviceControlViewModel.SelectedDeviceConfiguration}"
+                              ItemsSource="{Binding Dashboard.OutputDeviceControlViewModel.Devices}"
+                              SelectedItem="{Binding Dashboard.OutputDeviceControlViewModel.SelectedDeviceConfiguration}"
                               DisplayMemberPath="Title" />
 
                     <Separator Margin="8,0" />
@@ -134,16 +175,16 @@
                     <Button ToolTip="Save" Command="Save" Margin="0,0,4,0">
                         <materialDesign:PackIcon Kind="ContentSave"/>
                     </Button>
-                    <Button IsEnabled="{Binding CanActivateProfile}" ToolTip="Activate profile" Click="ActivateProfile" Margin="0,0,4,0">
+                    <Button IsEnabled="{Binding Dashboard.CanActivateProfile}" ToolTip="Activate profile" Command="{Binding ActivateProfileCommand}" Margin="0,0,4,0">
                         <materialDesign:PackIcon Kind="Play"/>
                     </Button>
-                    <Button IsEnabled="{Binding CanDeactivateProfile}" ToolTip="Stop active profile" Click="DeactivateProfile" Margin="0,0,8,0">
+                    <Button IsEnabled="{Binding Dashboard.CanDeactivateProfile}" ToolTip="Stop active profile" Command="{Binding DeactivateProfileCommand}" Margin="0,0,8,0">
                         <materialDesign:PackIcon Kind="Stop"/>
                     </Button>
 
                     <Separator Margin="8,0" />
                     
-                    <Button ToolTip="Import / Export" Click="ImportExport_OnClick" Margin="0,0,4,0">
+                    <Button ToolTip="Import / Export" Command="{Binding ImportExportCommand}" Margin="0,0,4,0">
                         <materialDesign:PackIcon Kind="FileExport"/>
                     </Button>
                     <Button ToolTip="Manage devices" Click="ManageDevices_OnClick" Margin="0,0,4,0">
