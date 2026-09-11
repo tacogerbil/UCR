@@ -62,7 +62,25 @@ namespace HidWizards.UCR.Views
             InitializeComponent();
             
             DevicesViewElement.DataContext = new HidWizards.UCR.ViewModels.Devices.DevicesViewModel(context);
-            MappingViewElement.DataContext = new HidWizards.UCR.ViewModels.Mapping.MappingViewModel(context);
+            
+            var mappingViewModel = new HidWizards.UCR.ViewModels.Mapping.MappingViewModel(context);
+            MappingViewElement.DataContext = mappingViewModel;
+            
+            // Sync Scope and Catalog to MappingViewModel
+            mappingViewModel.FullCatalog = _dashboardViewModel.InputSources;
+            mappingViewModel.CurrentScope = _dashboardViewModel.SelectedInputScope;
+            
+            _dashboardViewModel.PropertyChanged += (sender, args) =>
+            {
+                if (args.PropertyName == nameof(DashboardViewModel.SelectedInputScope))
+                {
+                    mappingViewModel.CurrentScope = _dashboardViewModel.SelectedInputScope;
+                }
+                else if (args.PropertyName == nameof(DashboardViewModel.SelectedProfileItem))
+                {
+                    mappingViewModel.SetProfile(_dashboardViewModel.SelectedProfileItem?.Profile);
+                }
+            };
             
             InitializeTrayIcon();
             _autoProfileMonitor = new AutoProfileMonitor(context);
@@ -99,15 +117,8 @@ namespace HidWizards.UCR.Views
 
         private bool GetSelectedItem(out ProfileItem profileItem)
         {
-            var pi = ProfileTree.SelectedItem as ProfileItem;
-            if (pi == null)
-            {
-                HidWizards.UCR.Utilities.DarkMessageBox.Show("Please select a Profile", "No Profile selected!",MessageBoxButton.OK, MessageBoxImage.Exclamation);
-                profileItem = null;
-                return false;
-            }
-            profileItem = pi;
-            return true;
+            profileItem = null;
+            return false;
         }
 
         // TODO Deprecated, replace with property notifications
@@ -119,28 +130,10 @@ namespace HidWizards.UCR.Views
 
         private void ProfileTree_OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (!string.Equals(_dashboardViewModel.ProfileGroupingMode, "Tree", StringComparison.Ordinal))
-            {
-                _draggedProfileItem = null;
-                return;
-            }
-
-            _profileDragStartPoint = e.GetPosition(ProfileTree);
-            var container = GetTreeViewItem(e.OriginalSource as DependencyObject);
-            _draggedProfileItem = container?.DataContext as ProfileItem;
         }
 
         private void ProfileTree_OnPreviewMouseMove(object sender, MouseEventArgs e)
         {
-            if (e.LeftButton != MouseButtonState.Pressed || _draggedProfileItem == null) return;
-
-            var currentPosition = e.GetPosition(ProfileTree);
-            if (Math.Abs(currentPosition.X - _profileDragStartPoint.X) < SystemParameters.MinimumHorizontalDragDistance &&
-                Math.Abs(currentPosition.Y - _profileDragStartPoint.Y) < SystemParameters.MinimumVerticalDragDistance) return;
-
-            var draggedItem = _draggedProfileItem;
-            _draggedProfileItem = null;
-            DragDrop.DoDragDrop(ProfileTree, draggedItem, DragDropEffects.Move);
         }
 
         private void ProfileTree_OnDragOver(object sender, DragEventArgs e)
@@ -308,6 +301,59 @@ namespace HidWizards.UCR.Views
             OpenProfileWindow(profile);
         }
 
+        private void GameProfile_OnClick(object sender, RoutedEventArgs e)
+        {
+            if (_dashboardViewModel.SelectedProfileItem != null)
+            {
+                // Open the profile mapping view for editing the name/exe, or just navigate
+                OpenProfileWindow(_dashboardViewModel.SelectedProfileItem.Profile);
+                return;
+            }
+
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Executables (*.exe)|*.exe",
+                Title = "Select Game Executable"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                var filePath = dialog.FileName;
+                var fileName = System.IO.Path.GetFileNameWithoutExtension(filePath);
+
+                var profile = Context.ProfilesManager.CreateProfile(fileName,
+                    new List<DeviceConfiguration>(), new List<DeviceConfiguration>());
+                
+                var rule = new HidWizards.UCR.Core.Models.ProfileApplicationRule(filePath);
+                profile.AutoActivateApplications.Add(rule);
+
+                Context.ProfilesManager.AddProfile(profile);
+
+                ReloadProfileTree();
+                
+                // Select the new profile
+                var newProfileItem = FindProfileItemById(_dashboardViewModel.ProfileList, profile.Guid);
+                if (newProfileItem != null)
+                {
+                    _dashboardViewModel.SelectedProfileItem = newProfileItem;
+                    OpenProfileWindow(profile);
+                }
+            }
+        }
+
+        private ProfileItem FindProfileItemById(IEnumerable<ProfileItem> items, Guid id)
+        {
+            if (items == null) return null;
+            foreach (var item in items)
+            {
+                if (item.Id == id) return item;
+                var childMatch = FindProfileItemById(item.Items, id);
+                if (childMatch != null) return childMatch;
+            }
+            return null;
+        }
+
+
         private void AddChildProfile(object sender, RoutedEventArgs e)
         {
             if (!GetSelectedItem(out var profileItem)) return;
@@ -346,33 +392,14 @@ namespace HidWizards.UCR.Views
 
         private void ShowNavigationPage(UserControl page)
         {
-            CloseNavigationPage(false);
-            _navigationPage = page as IDisposable;
-            NavigationHost.Content = page;
-            NavigationHost.Visibility = Visibility.Visible;
-            RootDialog.Visibility = Visibility.Collapsed;
-            MainToolbarHost.Visibility = Visibility.Collapsed;
         }
 
         private void NavigationPage_OnBackRequested(object sender, EventArgs e)
         {
-            CloseNavigationPage(true);
         }
 
         private void CloseNavigationPage(bool showDashboard)
         {
-            if (NavigationHost.Content is ProfilePage profilePage) profilePage.BackRequested -= NavigationPage_OnBackRequested;
-            if (NavigationHost.Content is DeviceManagerPage devicePage) devicePage.BackRequested -= NavigationPage_OnBackRequested;
-            _navigationPage?.Dispose();
-            _navigationPage = null;
-            NavigationHost.Content = null;
-            NavigationHost.Visibility = Visibility.Collapsed;
-            if (showDashboard)
-            {
-                RootDialog.Visibility = Visibility.Visible;
-                MainToolbarHost.Visibility = Visibility.Visible;
-                ReloadProfileTree();
-            }
         }
 
         private static void SurfaceProfileWindow(ProfileWindow window)
@@ -477,7 +504,7 @@ namespace HidWizards.UCR.Views
 
         private void ExportFromCombinedDialog()
         {
-            var selectedProfile = (ProfileTree.SelectedItem as ProfileItem)?.Profile;
+            var selectedProfile = _dashboardViewModel.SelectedProfileItem?.Profile;
             var dialog = new SaveFileDialog
             {
                 Title = "Export UCR",

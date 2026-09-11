@@ -95,25 +95,61 @@
             </Border>
             <ToolBarTray Style="{DynamicResource MaterialDesignToolBarTray}" IsEnabled="{Binding Source={x:Reference RootDialog}, Path=IsOpen, Converter={StaticResource InverseBooleanConverter}}">
                 <ToolBar ToolBarTray.IsLocked="True" Style="{DynamicResource MaterialDesignToolBar}" ClipToBounds="False">
-                    <Button ToolTip="Save" Command="Save">
+                    <!-- VIEW SWITCH (Devices | Mapping) -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,16,0">
+                        <RadioButton x:Name="DevicesViewRadio" Content="Devices" Style="{StaticResource MaterialDesignTabRadioButton}" Margin="4,0" IsChecked="True"/>
+                        <RadioButton x:Name="MappingViewRadio" Content="Mapping" Style="{StaticResource MaterialDesignTabRadioButton}" Margin="4,0"/>
+                    </StackPanel>
+
+                    <!-- INPUT SCOPE DROPDOWN (Devices catalog) -->
+                    <ComboBox x:Name="InputScopeCombo" 
+                              materialDesign:HintAssist.Hint="INPUT SCOPE"
+                              Width="180" Margin="0,0,16,0"
+                              ItemsSource="{Binding InputSources}"
+                              SelectedItem="{Binding SelectedInputScope}"
+                              DisplayMemberPath="DisplayName" />
+
+                    <!-- GAME PROFILE CHIP -->
+                    <Button x:Name="GameProfileBtn" Style="{StaticResource MaterialDesignOutlinedButton}" 
+                            Click="GameProfile_OnClick"
+                            Margin="0,0,16,0"
+                            BorderBrush="{DynamicResource PrimaryHueMidBrush}" 
+                            Foreground="{DynamicResource PrimaryHueMidBrush}"
+                            ToolTip="Select or create a game profile">
+                        <Button.Content>
+                            <TextBlock Text="{Binding SelectedProfileItem.Title, TargetNullValue='+ Press to create game profile', FallbackValue='+ Press to create game profile'}"/>
+                        </Button.Content>
+                    </Button>
+
+                    <!-- OUTPUT DEVICE DROPDOWN -->
+                    <ComboBox x:Name="OutputDeviceCombo" 
+                              materialDesign:HintAssist.Hint="OUTPUT DEVICE"
+                              Width="180" Margin="0,0,16,0"
+                              ItemsSource="{Binding OutputDeviceControlViewModel.Devices}"
+                              SelectedItem="{Binding OutputDeviceControlViewModel.SelectedDeviceConfiguration}"
+                              DisplayMemberPath="Title" />
+
+                    <Separator Margin="8,0" />
+
+                    <Button ToolTip="Save" Command="Save" Margin="0,0,4,0">
                         <materialDesign:PackIcon Kind="ContentSave"/>
                     </Button>
-                    <Button IsEnabled="{Binding CanActivateProfile}" ToolTip="Activate profile" Click="ActivateProfile">
+                    <Button IsEnabled="{Binding CanActivateProfile}" ToolTip="Activate profile" Click="ActivateProfile" Margin="0,0,4,0">
                         <materialDesign:PackIcon Kind="Play"/>
                     </Button>
-                    <Button IsEnabled="{Binding CanDeactivateProfile}" ToolTip="Stop active profile" Click="DeactivateProfile">
+                    <Button IsEnabled="{Binding CanDeactivateProfile}" ToolTip="Stop active profile" Click="DeactivateProfile" Margin="0,0,8,0">
                         <materialDesign:PackIcon Kind="Stop"/>
                     </Button>
-                    <Separator />
-                    <ToggleButton x:Name="ViewToggle" Content="Mapping" ToolTip="Toggle Devices / Mapping" Width="100"/>
-                    <Separator />
-                    <Button ToolTip="Import / Export" Click="ImportExport_OnClick">
+
+                    <Separator Margin="8,0" />
+                    
+                    <Button ToolTip="Import / Export" Click="ImportExport_OnClick" Margin="0,0,4,0">
                         <materialDesign:PackIcon Kind="FileExport"/>
                     </Button>
-                    <Button ToolTip="Manage devices" Click="ManageDevices_OnClick">
+                    <Button ToolTip="Manage devices" Click="ManageDevices_OnClick" Margin="0,0,4,0">
                         <materialDesign:PackIcon Kind="Settings"/>
                     </Button>
-                    <Button x:Name="AppearanceButton" ToolTip="Appearance" Click="Appearance_OnClick" Padding="8 0">
+                    <Button x:Name="AppearanceButton" ToolTip="Appearance" Click="Appearance_OnClick" Padding="8 0" Margin="0,0,4,0">
                         <Grid Width="20" Height="20">
                             <Ellipse Width="16" Height="16" Fill="{DynamicResource PrimaryHueMidBrush}" Stroke="#D8D8D8" StrokeThickness="1"/>
                             <Ellipse Width="5" Height="5" Fill="#212121" HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -140,333 +176,11 @@
                                           CancelRequested="AppearancePicker_OnCancelRequested"/>
             </Popup>
         </Grid>
-        <materialDesign:DialogHost x:Name="RootDialog" Grid.Row="2" Identifier="RootDialog" Visibility="Collapsed">
-            <Grid Margin="8">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="320" MinWidth="210"/>
-                    <ColumnDefinition Width="5"/>
-                    <ColumnDefinition Width="*" MinWidth="240"/>
-                </Grid.ColumnDefinitions>
-                <materialDesign:Card Grid.Column="0" Height="{Binding RelativeSource={RelativeSource AncestorType={x:Type Grid}}, Path=ActualHeight}" Margin="0">
-                    <Grid Height="Auto">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
-                        <Grid Grid.Row="0">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Margin="8 7 4 4" Style="{StaticResource MaterialDesignTitleTextBlock}">Profiles</TextBlock>
-                            <StackPanel Grid.Column="2" HorizontalAlignment="Right" Orientation="Horizontal" Margin="4 0 8 0">
-                                <Button ToolTip="Import profile"
-                                        Style="{StaticResource MaterialDesignCardButton}"
-                                        Click="ImportProfile">
-                                    <materialDesign:PackIcon Kind="FileImport" Width="20" Height="20"/>
-                                </Button>
-                                <Button ToolTip="Add profile"
-                                        Style="{StaticResource MaterialDesignCardButton}"
-                                        Click="AddProfile">
-                                    <materialDesign:PackIcon Kind="AccountPlus" Width="20" Height="20"/>
-                                </Button>
-                                <Button ToolTip="Profile view options"
-                                        Style="{StaticResource MaterialDesignCardButton}"
-                                        Click="ContextMenuButton_OnClick">
-                                    <materialDesign:PackIcon Kind="DotsVertical" Width="20" Height="20"/>
-                                    <Button.ContextMenu>
-                                        <ContextMenu Style="{StaticResource MaterialDesignContextMenu}"
-                                                     DataContext="{Binding PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
-                                            <MenuItem Header="Group profiles by input device"
-                                                      IsCheckable="True"
-                                                      IsChecked="{Binding GroupProfilesByInput, Mode=TwoWay}"/>
-                                        </ContextMenu>
-                                    </Button.ContextMenu>
-                                </Button>
-                            </StackPanel>
-                        </Grid>
-                        <Separator Grid.Row="1" Margin="8 0 8 4" Height="4"  Style="{StaticResource MaterialDesignDarkSeparator}" />
-                        <TreeView Grid.Row="2" Name="ProfileTree" Margin="4"
-                                  ItemsSource="{Binding ProfileListView}"
-                                  HorizontalContentAlignment="Stretch"
-                                  AllowDrop="True"
-                                  PreviewMouseLeftButtonDown="ProfileTree_OnPreviewMouseLeftButtonDown"
-                                  PreviewMouseMove="ProfileTree_OnPreviewMouseMove"
-                                  DragOver="ProfileTree_OnDragOver"
-                                  Drop="ProfileTree_OnDrop"
-                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                  SelectedItemChanged="ProfileTree_OnSelectedItemChanged">
-                            <TreeView.Style>
-                                <Style TargetType="TreeView" BasedOn="{StaticResource MaterialDesignTreeView}">
-                                    <Style.Triggers>
-                                        <Trigger Property="HasItems" Value="False">
-                                            <Setter Property="Template">
-                                                <Setter.Value>
-                                                    <ControlTemplate>
-                                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                            <TextBlock Margin="4">Click</TextBlock>
-                                                            <materialDesign:PackIcon Kind="AccountPlus" Height="16" Width="16" Margin="4"/>
-                                                            <TextBlock Margin="4">to add your first profile</TextBlock>
-                                                        </StackPanel>
-                                                    </ControlTemplate>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TreeView.Style>
-                            <TreeView.ItemContainerStyle>
-                                <Style TargetType="{x:Type TreeViewItem}" BasedOn="{StaticResource MaterialDesignTreeViewItem}">
-                                    <Setter Property="IsExpanded" Value="True"/>
-                                    <Setter Property="HorizontalAlignment" Value="Stretch"/>
-                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                                    <!-- MaterialDesign 2.5.1 applies its Padding inside Ripple. Remove it here so
-                                         the profile template can own its inset while explicitly filling Ripple. -->
-                                    <Setter Property="Padding" Value="0"/>
-                                    <EventSetter Event="MouseDoubleClick" Handler="EditProfile"/>
-                                </Style>
-                            </TreeView.ItemContainerStyle>
-                            <TreeView.GroupStyle>
-                                <GroupStyle>
-                                    <GroupStyle.ContainerStyle>
-                                        <Style TargetType="GroupItem">
-                                            <Setter Property="Template">
-                                                <Setter.Value>
-                                                    <ControlTemplate TargetType="GroupItem">
-                                                        <StackPanel Margin="0 4 0 3">
-                                                            <Border Margin="4 2" Padding="7 5" Background="#1F1F1F" CornerRadius="4"
-                                                                    ToolTip="{Binding Name.Visual.ToolTip}">
-                                                                <StackPanel Orientation="Horizontal">
-                                                                    <ContentControl Content="{Binding Name.Visual}" ContentTemplate="{StaticResource DeviceBadgeTemplate}"
-                                                                                    Margin="0 0 7 0" VerticalAlignment="Center"/>
-                                                                    <TextBlock Text="{Binding Name.Name}" FontSize="13.5" FontWeight="SemiBold"
-                                                                               Opacity="0.76" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-                                                                </StackPanel>
-                                                            </Border>
-                                                            <ItemsPresenter/>
-                                                        </StackPanel>
-                                                    </ControlTemplate>
-                                                </Setter.Value>
-                                            </Setter>
-                                        </Style>
-                                    </GroupStyle.ContainerStyle>
-                                </GroupStyle>
-                            </TreeView.GroupStyle>
-                            <TreeView.ItemTemplate>
-                                <HierarchicalDataTemplate DataType="{x:Type dashboard:ProfileItem}" ItemsSource="{Binding Items}">
-                                    <!-- MaterialDesign 2.5.1 can arrange a TreeView header at its desired width even
-                                         when the selected-row chrome is much wider. Bind to the owning Ripple so the
-                                         profile row always receives the real header width instead of collapsing the
-                                         title to a few characters. -->
-                                    <Grid Width="{Binding RelativeSource={RelativeSource AncestorType={x:Type materialDesign:Ripple}}, Path=ActualWidth}"
-                                          HorizontalAlignment="Left" ToolTip="{Binding Title}">
-                                        <Grid Margin="8 2" MinHeight="38" HorizontalAlignment="Stretch">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto"/>
-                                                <ColumnDefinition Width="*"/>
-                                                <ColumnDefinition Width="Auto"/>
-                                            </Grid.ColumnDefinitions>
-
-                                            <!-- Device badges consume only the width they need; the profile title owns the remainder. -->
-                                            <ItemsControl Grid.Column="0" ItemsSource="{Binding InputVisuals}"
-                                                          ItemTemplate="{StaticResource DeviceBadgeTemplate}"
-                                                          HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                                            </ItemsControl>
-
-                                            <Grid Grid.Column="1" Margin="6 0">
-                                                <TextBlock Text="{Binding Title}" FontSize="15.5" FontWeight="Medium"
-                                                           HorizontalAlignment="Stretch" TextAlignment="Center" VerticalAlignment="Center"
-                                                           TextTrimming="CharacterEllipsis"/>
-                                                <Ellipse Width="7" Height="7" Margin="0 0 4 0" HorizontalAlignment="Right"
-                                                         Fill="{DynamicResource PrimaryHueMidBrush}" VerticalAlignment="Center" ToolTip="Auto-apply enabled">
-                                                    <Ellipse.Style>
-                                                        <Style TargetType="Ellipse">
-                                                            <Setter Property="Visibility" Value="Collapsed"/>
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding Profile.AutoActivateEnabled}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </Ellipse.Style>
-                                                </Ellipse>
-                                            </Grid>
-
-                                            <ItemsControl Grid.Column="2" ItemsSource="{Binding OutputVisuals}"
-                                                          ItemTemplate="{StaticResource DeviceBadgeTemplate}"
-                                                          HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal"/></ItemsPanelTemplate></ItemsControl.ItemsPanel>
-                                            </ItemsControl>
-                                        </Grid>
-                                    </Grid>
-                                </HierarchicalDataTemplate>
-                            </TreeView.ItemTemplate>
-                        </TreeView>
-                    </Grid>
-                </materialDesign:Card>
-
-                <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                              ResizeDirection="Columns" ResizeBehavior="PreviousAndNext"
-                              Background="Transparent" Cursor="SizeWE" ToolTip="Resize Profiles pane">
-                    <GridSplitter.Template>
-                        <ControlTemplate TargetType="GridSplitter">
-                            <Border Background="Transparent">
-                                <Border Width="1" HorizontalAlignment="Center" Background="#454545"/>
-                            </Border>
-                        </ControlTemplate>
-                    </GridSplitter.Template>
-                </GridSplitter>
-
-                <Grid Grid.Column="2" Margin="8 0 0 0" Visibility="{Binding ProfileDetailsActive}">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    <materialDesign:Card Grid.Column="0" Background="#242424" Height="{Binding RelativeSource={RelativeSource AncestorType={x:Type Grid}}, Path=ActualHeight}">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                            </Grid.RowDefinitions>
-                            <Border Grid.Row="0" Grid.ColumnSpan="2" Height="3" VerticalAlignment="Top" Background="{DynamicResource PrimaryHueMidBrush}"/>
-                            <StackPanel Grid.Column="0" Grid.Row="0" FlowDirection="LeftToRight" HorizontalAlignment="Left" Orientation="Horizontal" Margin="0 4 0 0">
-                                <TextBlock Margin="8 5 4 3" Text="{Binding SelectedProfileItem.Title}" Style="{StaticResource MaterialDesignTitleTextBlock}" Foreground="#FFFFFF"/>
-                                <Button ToolTip="Rename profile"
-                                        Style="{StaticResource MaterialDesignCardButton}"
-                                        Foreground="#BDBDBD"
-                                        Click="RenameProfile">
-                                    <materialDesign:PackIcon Kind="Edit" Width="20" Height="20"/>
-                                </Button>
-                            </StackPanel>
-                            <StackPanel Grid.Column="1" Grid.Row="0" HorizontalAlignment="Right" Orientation="Horizontal" Margin="4 4 8 0">
-                                <Button ToolTip="Activate profile"
-                                        Style="{StaticResource MaterialDesignCardButton}"
-                                        Foreground="#BDBDBD"
-                                        Click="ActivateProfile">
-                                    <materialDesign:PackIcon Kind="Play" Width="20" Height="20"/>
-                                </Button>
-                                <Button ToolTip="Edit profile"
-                                        Style="{StaticResource MaterialDesignCardButton}"
-                                        Foreground="#BDBDBD"
-                                        Click="EditProfile">
-                                    <materialDesign:PackIcon Kind="AccountEdit" Width="20" Height="20"/>
-                                </Button>
-                                <Button ToolTip="Add child profile"
-                                        Style="{StaticResource MaterialDesignCardButton}"
-                                        Foreground="#BDBDBD"
-                                        Click="AddChildProfile">
-                                    <materialDesign:PackIcon Kind="AccountPlus" Width="20" Height="20"/>
-                                </Button>
-                                <Button ToolTip="Copy profile"
-                                        Style="{StaticResource MaterialDesignCardButton}"
-                                        Foreground="#BDBDBD"
-                                        Click="CopyProfile">
-                                    <materialDesign:PackIcon Kind="AccountMultiplePlus" Width="20" Height="20"/>
-                                </Button>
-                                <Button ToolTip="Export profile"
-                                        Style="{StaticResource MaterialDesignCardButton}"
-                                        Foreground="#BDBDBD"
-                                        Click="ExportProfile">
-                                    <materialDesign:PackIcon Kind="FileExport" Width="20" Height="20"/>
-                                </Button>
-                                <Button ToolTip="Import profile as child"
-                                        Style="{StaticResource MaterialDesignCardButton}"
-                                        Foreground="#BDBDBD"
-                                        Click="ImportChildProfile">
-                                    <materialDesign:PackIcon Kind="FileImport" Width="20" Height="20"/>
-                                </Button>
-                                <Button ToolTip="Delete profile"
-                                        Style="{StaticResource MaterialDesignCardButton}"
-                                        Foreground="#BDBDBD"
-                                        Click="RemoveProfile">
-                                    <materialDesign:PackIcon Kind="Trash" Width="20" Height="20"/>
-                                </Button>
-                            </StackPanel>
-                            <Separator Grid.Row="1" Grid.ColumnSpan="2" Margin="8 0 8 4" Height="4"  Style="{StaticResource MaterialDesignDarkSeparator}" />
-                            <Border Grid.Row="2" Grid.ColumnSpan="2" Margin="8 2 8 6" Padding="8 7" Background="#212121" CornerRadius="2">
-                                <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
-                                    <Grid Grid.Row="0">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <CheckBox Grid.Column="0" VerticalAlignment="Center" Foreground="White"
-                                                  Content="Auto-apply while an application is running"
-                                                  IsChecked="{Binding SelectedProfileItem.Profile.AutoActivateEnabled, Mode=TwoWay}"
-                                                  ToolTip="Automatically activates this profile while any configured application rule matches."/>
-                                        <Button Grid.Column="1" Width="30" Height="28" Padding="4" Margin="6 0 0 0"
-                                                IsEnabled="{Binding SelectedProfileItem.Profile.AutoActivateEnabled}"
-                                                ToolTip="Add application rule" Click="AddAutoActivateApplication_OnClick"
-                                                Style="{StaticResource MaterialDesignFlatButton}">
-                                            <materialDesign:PackIcon Kind="Plus" Width="17" Height="17"/>
-                                        </Button>
-                                    </Grid>
-                                    <ScrollViewer Grid.Row="1" Margin="0 6 0 0" MaxHeight="116" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                                        <ItemsControl ItemsSource="{Binding SelectedProfileItem.Profile.AutoActivateApplications}"
-                                                      IsEnabled="{Binding SelectedProfileItem.Profile.AutoActivateEnabled}">
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate>
-                                                    <Grid Margin="0 2">
-                                                        <Grid.ColumnDefinitions>
-                                                            <ColumnDefinition Width="1.1*"/>
-                                                            <ColumnDefinition Width="1*"/>
-                                                            <ColumnDefinition Width="30"/>
-                                                            <ColumnDefinition Width="30"/>
-                                                        </Grid.ColumnDefinitions>
-                                                        <TextBox Grid.Column="0" Margin="0 0 5 0" Padding="6 3" VerticalContentAlignment="Center"
-                                                                 Background="#2B2B2B" Foreground="White" CaretBrush="White"
-                                                                 Text="{Binding Executable, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                                 materialDesign:HintAssist.Hint="Executable (game.exe)"/>
-                                                        <TextBox Grid.Column="1" Margin="0 0 5 0" Padding="6 3" VerticalContentAlignment="Center"
-                                                                 Background="#2B2B2B" Foreground="White" CaretBrush="White"
-                                                                 Text="{Binding Arguments, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                                                 materialDesign:HintAssist.Hint="Optional parameters"/>
-                                                        <Button Grid.Column="2" Width="28" Height="28" Padding="4" Margin="0 0 2 0"
-                                                                ToolTip="Choose executable" Click="BrowseAutoActivateExecutable"
-                                                                Style="{StaticResource MaterialDesignFlatButton}">
-                                                            <materialDesign:PackIcon Kind="Folder" Width="16" Height="16"/>
-                                                        </Button>
-                                                        <Button Grid.Column="3" Width="28" Height="28" Padding="4"
-                                                                ToolTip="Remove application rule" Click="RemoveAutoActivateApplication_OnClick"
-                                                                Style="{StaticResource MaterialDesignFlatButton}">
-                                                            <materialDesign:PackIcon Kind="Close" Width="16" Height="16"/>
-                                                        </Button>
-                                                    </Grid>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-                                    </ScrollViewer>
-                                </Grid>
-                            </Border>
-                            <Grid Grid.Row="3" Grid.ColumnSpan="2" Margin="0 0 0 4">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <controls:ProfileDeviceListControl Title="Input devices" MinHeight="200" Margin="8 4 4 4" DataContext="{Binding InputDeviceControlViewModel}"/>
-                                <controls:ProfileDeviceListControl Title="Output devices" Grid.Column="1" MinHeight="200" Margin="4 4 8 4" DataContext="{Binding OutputDeviceControlViewModel}"/>
-                            </Grid>
-                        </Grid>
-                    </materialDesign:Card>
-                </Grid>
+        <materialDesign:DialogHost x:Name="RootDialog" Grid.Row="2" Identifier="RootDialog">
+            <Grid x:Name="PatchBayHost">
+                <devices:DevicesView x:Name="DevicesViewElement" Visibility="{Binding ElementName=DevicesViewRadio, Path=IsChecked, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                <mapping:MappingView x:Name="MappingViewElement" Visibility="{Binding ElementName=MappingViewRadio, Path=IsChecked, Converter={StaticResource BooleanToVisibilityConverter}}"/>
             </Grid>
         </materialDesign:DialogHost>
-        <ContentControl x:Name="NavigationHost" Grid.Row="2" Visibility="Collapsed" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
-        
-        <Grid Grid.Row="2" x:Name="PatchBayHost">
-            <devices:DevicesView x:Name="DevicesViewElement" Visibility="{Binding ElementName=ViewToggle, Path=IsChecked, Converter={StaticResource InverseBooleanToVisibilityConverter}}"/>
-            <mapping:MappingView x:Name="MappingViewElement" Visibility="{Binding ElementName=ViewToggle, Path=IsChecked, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-        </Grid>
     </Grid>
 </Window>
