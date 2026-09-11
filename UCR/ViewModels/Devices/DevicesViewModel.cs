@@ -202,7 +202,32 @@ namespace HidWizards.UCR.ViewModels.Devices
             _context.DeviceGroupService.RemoveDeviceFromGroup(_group.Guid, deviceId);
             if (deleteMappings)
             {
-                // To be handled in Phase 3
+                foreach (var profile in _context.Profiles)
+                {
+                    ClearMappingsForDevice(profile, deviceId);
+                }
+            }
+        }
+
+        private void ClearMappingsForDevice(Profile profile, string deviceId)
+        {
+            foreach (var mapping in profile.Mappings)
+            {
+                foreach (var binding in mapping.DeviceBindings)
+                {
+                    if (!binding.IsBound) continue;
+                    
+                    var config = profile.GetDeviceConfiguration(binding.DeviceIoType, binding.DeviceConfigurationGuid);
+                    if (config?.Device != null && HidWizards.UCR.Core.Managers.DeviceIdentity.BuildLogicalKey(config.Device) == deviceId)
+                    {
+                        binding.ClearBinding();
+                    }
+                }
+            }
+            
+            foreach (var childProfile in profile.ChildProfiles)
+            {
+                ClearMappingsForDevice(childProfile, deviceId);
             }
         }
 

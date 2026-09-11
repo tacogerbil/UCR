@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using HidWizards.UCR.Core;
 using HidWizards.UCR.Core.Models;
+using HidWizards.UCR.ViewModels.Dashboard;
 
 namespace HidWizards.UCR.ViewModels.Mapping
 {
@@ -13,6 +14,25 @@ namespace HidWizards.UCR.ViewModels.Mapping
     {
         private readonly Context _context;
         private Profile _currentProfile;
+        
+        public ObservableCollection<InputScopeItem> FullCatalog { get; set; }
+
+        private InputScopeItem _currentScope;
+        public InputScopeItem CurrentScope
+        {
+            get => _currentScope;
+            set
+            {
+                if (_currentScope == value) return;
+                _currentScope = value;
+                OnPropertyChanged();
+                
+                foreach (var row in Rows)
+                {
+                    row.CurrentScope = value;
+                }
+            }
+        }
         
         public ObservableCollection<MappingRowViewModel> Rows { get; } = new ObservableCollection<MappingRowViewModel>();
 
@@ -69,7 +89,11 @@ namespace HidWizards.UCR.ViewModels.Mapping
                 _currentProfile.Mappings.Add(mapping);
             }
             
-            var rowVm = new MappingRowViewModel(_context, mapping, title, targetOutputKey, isAxis);
+            var rowVm = new MappingRowViewModel(_context, mapping, title, targetOutputKey, isAxis)
+            {
+                CurrentScope = CurrentScope,
+                FullCatalog = FullCatalog
+            };
             Rows.Add(rowVm);
         }
 

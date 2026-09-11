@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Data;
 using HidWizards.UCR.Core;
 using HidWizards.UCR.Core.Annotations;
+using HidWizards.UCR.Core.Managers;
 using HidWizards.UCR.Core.Models;
 using HidWizards.UCR.Core.Models.Binding;
 
@@ -44,6 +45,20 @@ namespace HidWizards.UCR.ViewModels.Dashboard
         public ObservableCollection<ProfileItem> ProfileList { get; private set; }
         public ICollectionView ProfileListView { get; private set; }
 
+        public ObservableCollection<InputScopeItem> InputSources { get; } = new ObservableCollection<InputScopeItem>();
+        
+        private InputScopeItem _selectedInputScope;
+        public InputScopeItem SelectedInputScope
+        {
+            get => _selectedInputScope;
+            set
+            {
+                if (_selectedInputScope == value) return;
+                _selectedInputScope = value;
+                OnPropertyChanged();
+            }
+        }
+
         private string _profileGroupingMode = "Tree";
         public string ProfileGroupingMode
         {
@@ -76,6 +91,67 @@ namespace HidWizards.UCR.ViewModels.Dashboard
             PropertyChanged += OnPropertyChanged;
             context.ActiveProfileChangedEvent += OnActiveProfileChangedEvent;
             context.DeviceAliasesChangedEvent += OnDeviceAliasesChangedEvent;
+            
+            context.DevicesManager.DeviceListChanged += OnDeviceListChanged;
+            context.DeviceGroupService.DeviceGroupsChanged += OnDeviceGroupsChanged;
+            PopulateInputSources();
+        }
+
+        private void OnDeviceListChanged()
+        {
+            Application.Current.Dispatcher.Invoke(PopulateInputSources);
+        }
+
+        private void OnDeviceGroupsChanged()
+        {
+            Application.Current.Dispatcher.Invoke(PopulateInputSources);
+        }
+
+        private void PopulateInputSources()
+        {
+            var oldSelectedId = SelectedInputScope?.Id;
+            InputSources.Clear();
+
+            // 1. Add Ungrouped Devices
+            var inputDevices = Context.DevicesManager.GetAvailableDeviceList(DeviceIoType.Input, false);
+            foreach (var device in inputDevices)
+            {
+                var logicalKey = DeviceIdentity.BuildLogicalKey(device);
+                // Check if this device is part of any group
+                bool isGrouped = false;
+                foreach (var group in Context.DeviceGroups)
+                {
+                    if (group.MemberDeviceIdentities.Contains(logicalKey))
+                    {
+                        isGrouped = true;
+                        break;
+                    }
+                }
+                
+                if (!isGrouped)
+                {
+                    InputSources.Add(new InputScopeItem(logicalKey, device.Title, false, new List<string> { logicalKey }));
+                }
+            }
+
+            // 2. Add Named Groups
+            foreach (var group in Context.DeviceGroups)
+            {
+                InputSources.Add(new InputScopeItem(group.Guid.ToString(), group.Title, true, group.MemberDeviceIdentities));
+            }
+
+            // Restore selection if possible
+            if (oldSelectedId != null)
+            {
+                foreach (var item in InputSources)
+                {
+                    if (item.Id == oldSelectedId)
+                    {
+                        SelectedInputScope = item;
+                        break;
+                    }
+                }
+            }
         }
 
         public void ReplaceProfileList(ObservableCollection<ProfileItem> profileList)
