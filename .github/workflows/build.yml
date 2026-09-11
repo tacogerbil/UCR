@@ -36,6 +36,10 @@ jobs:
           msbuild -version
           nuget help | Select-Object -First 1
 
+          # The IOWrapper submodule (third-party, pinned to a fixed commit) still targets
+          # classic .NET Framework 4.5.2/4.6.1 - these targeting packs are required to build
+          # it below. UCR itself has been fully migrated to net8.0-windows and no longer
+          # needs them, but IOWrapper has not been touched and is out of scope for that migration.
           $net452 = "${env:ProgramFiles(x86)}\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.5.2\mscorlib.dll"
           if (-not (Test-Path $net452)) {
             throw ".NET Framework 4.5.2 targeting pack is missing from windows-2022."
@@ -290,84 +294,28 @@ jobs:
           Write-Host "Verified $($sourceFiles.Count) IOWrapper artifact files copied byte-for-byte into dependencies."
           Write-Host 'Verified staged Core Interception settings have BlockingEnabled=true.'
 
-      - name: Restore UCR NuGet packages
+      - name: Install NUnit console runner
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
 
-          $packageConfigs = @(
-            '.\UCR\packages.config',
-            '.\UCR.Core\packages.config',
-            '.\UCR.FileHandler\packages.config',
-            '.\UCR.Tests\packages.config'
-          )
-
-          foreach ($config in $packageConfigs) {
-            if (-not (Test-Path $config)) {
-              throw "Expected packages.config is missing: $config"
-            }
-            nuget restore $config -PackagesDirectory .\packages -NonInteractive
-            if ($LASTEXITCODE -ne 0) {
-              throw "NuGet restore failed for $config with exit code $LASTEXITCODE."
-            }
+          # UCR, UCR.Core, UCR.FileHandler and UCR.Tests were migrated to SDK-style
+          # PackageReference projects (net8.0-windows). Their packages.config files are
+          # stale leftovers from the old .NET Framework project format and are no longer
+          # consulted by the build - restoring them here was a silent no-op. Their actual
+          # NuGet packages are restored via `msbuild /restore` in the build step below.
+          # NUnit.ConsoleRunner is a standalone CLI tool, not a project dependency, so it
+          # is installed directly rather than through a project's package restore.
+          nuget install NUnit.ConsoleRunner -Version 3.9.0 -OutputDirectory .\packages -NonInteractive
+          if ($LASTEXITCODE -ne 0) {
+            throw "NUnit.ConsoleRunner install failed with exit code $LASTEXITCODE."
           }
 
-      - name: Disable legacy GitVersion MSBuild integration
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-
-          $project = Join-Path $PWD 'UCR\UCR.csproj'
-          if (-not (Test-Path -LiteralPath $project -PathType Leaf)) {
-            throw "UCR project file is missing: $project"
+          $runner = '.\packages\NUnit.ConsoleRunner.3.9.0\tools\nunit3-console.exe'
+          if (-not (Test-Path -LiteralPath $runner -PathType Leaf)) {
+            throw "Expected NUnit console runner is missing after install: $runner"
           }
-
-          $originalBytes = [System.IO.File]::ReadAllBytes($project)
-          $originalHash = (Get-FileHash -LiteralPath $project -Algorithm SHA256).Hash
-
-          $utf8NoBom = [System.Text.UTF8Encoding]::new($false)
-          $offset = 0
-          if ($originalBytes.Length -ge 3 -and $originalBytes[0] -eq 0xEF -and $originalBytes[1] -eq 0xBB -and $originalBytes[2] -eq 0xBF) {
-            $offset = 3
-          }
-          $original = $utf8NoBom.GetString($originalBytes, $offset, $originalBytes.Length - $offset)
-
-          $gitVersionMatches = [regex]::Matches($original, '(?m)^.*GitVersionTask\.4\.0\.0.*(?:\r?\n|$)')
-          $utilPackMatches = [regex]::Matches($original, '(?m)^.*UtilPack\.NuGet\.MSBuild\.2\.7\.0.*(?:\r?\n|$)')
-
-          if ($gitVersionMatches.Count -ne 2) {
-            throw "Expected exactly 2 GitVersionTask references in UCR.csproj, found $($gitVersionMatches.Count). Refusing to patch an unexpected project layout."
-          }
-          if ($utilPackMatches.Count -ne 2) {
-            throw "Expected exactly 2 UtilPack.NuGet.MSBuild references in UCR.csproj, found $($utilPackMatches.Count). Refusing to patch an unexpected project layout."
-          }
-
-          $patched = [regex]::Replace($original, '(?m)^.*GitVersionTask\.4\.0\.0.*(?:\r?\n|$)', '')
-          $patched = [regex]::Replace($patched, '(?m)^.*UtilPack\.NuGet\.MSBuild\.2\.7\.0.*(?:\r?\n|$)', '')
-
-          if ($patched -match 'GitVersionTask\.4\.0\.0') {
-            throw 'GitVersionTask reference remained after CI compatibility patch.'
-          }
-          if ($patched -match 'UtilPack\.NuGet\.MSBuild\.2\.7\.0') {
-            throw 'UtilPack.NuGet.MSBuild reference remained after CI compatibility patch.'
-          }
-
-          $utf8Bom = [System.Text.UTF8Encoding]::new($true)
-          [System.IO.File]::WriteAllText($project, $patched, $utf8Bom)
-
-          [xml]$parsed = Get-Content -LiteralPath $project -Raw
-          if ($null -eq $parsed.Project) {
-            throw 'Patched UCR.csproj is not a valid MSBuild XML project.'
-          }
-
-          $patchedHash = (Get-FileHash -LiteralPath $project -Algorithm SHA256).Hash
-          if ($patchedHash -eq $originalHash) {
-            throw 'UCR.csproj hash did not change after removing legacy GitVersion integration.'
-          }
-
-          Write-Host "Verified legacy GitVersionTask/UtilPack integration removed only in the ephemeral CI workspace."
-          Write-Host "Original UCR.csproj SHA-256: $originalHash"
-          Write-Host "Patched  UCR.csproj SHA-256: $patchedHash"
+          Write-Host "Verified NUnit console runner: $runner"
 
       - name: Build UCR Stylish Release
         shell: pwsh
@@ -386,7 +334,10 @@ jobs:
             $versionMatch.Groups[3].Value
 
           Write-Host "Using deterministic VersionNumber=$versionNumber from GitVersion.yml"
-          msbuild .\UCR.sln /m:1 /t:Rebuild /p:Configuration=Release /p:Platform="Any CPU" /p:VersionNumber="$versionNumber" /v:minimal
+          # /restore is required here: UCR.sln's projects are SDK-style PackageReference
+          # projects now, and plain msbuild /t:Rebuild (unlike `dotnet build`) does not
+          # restore NuGet packages implicitly.
+          msbuild .\UCR.sln /m:1 /restore /t:Rebuild /p:Configuration=Release /p:Platform="Any CPU" /p:VersionNumber="$versionNumber" /v:minimal
           if ($LASTEXITCODE -ne 0) {
             throw "UCR Release build failed with exit code $LASTEXITCODE."
           }
@@ -396,7 +347,10 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
 
-          $exe = '.\UCR\bin\Release\UCR.exe'
+          # SDK-style projects append the target framework moniker to the output path by
+          # default (bin\Release\net8.0-windows\...); UCR.csproj's own PostBuild target
+          # already relies on this same layout when staging UCR.FileHandler's output.
+          $exe = '.\UCR\bin\Release\net8.0-windows\UCR.exe'
           if (-not (Test-Path $exe)) {
             throw "Build reported success but the expected executable does not exist: $exe"
           }
@@ -406,7 +360,7 @@ jobs:
             throw "The built UCR.exe is empty."
           }
 
-          $finalInterceptionSettings = '.\UCR\bin\Release\Providers\Core_Interception\Settings.xml'
+          $finalInterceptionSettings = '.\UCR\bin\Release\net8.0-windows\Providers\Core_Interception\Settings.xml'
           if (-not (Test-Path -LiteralPath $finalInterceptionSettings -PathType Leaf)) {
             throw "Final Core Interception settings are missing: $finalInterceptionSettings"
           }
@@ -428,7 +382,7 @@ jobs:
 
           $expected = @(
             @{
-              Path = '.\UCR\bin\Release\Providers\Core_Interception\IOWrapper.Libraries.PollingDeviceHandler.dll'
+              Path = '.\UCR\bin\Release\net8.0-windows\Providers\Core_Interception\IOWrapper.Libraries.PollingDeviceHandler.dll'
               Sha256 = 'dec7437219bb5b410955c0fc50d1a3f92af31cf08bc1c23ec7e5dcdfa4207b25'
             }
           )
@@ -444,7 +398,7 @@ jobs:
             Write-Host "Verified final provider DLL: $($item.Path) [$actual]"
           }
 
-          $vigemPath = '.\UCR\bin\Release\Providers\Core_ViGEm\Core_ViGEm.dll'
+          $vigemPath = '.\UCR\bin\Release\net8.0-windows\Providers\Core_ViGEm\Core_ViGEm.dll'
           $oldUnpatchedHash = 'bb6a4862a723fd5b6e40ecfcb955f577d36373e6ae425fe82bffaf88fd87ec65'
           if (-not (Test-Path -LiteralPath $vigemPath -PathType Leaf)) {
             throw "Patched Core_ViGEm provider is missing from final output: $vigemPath"
@@ -461,16 +415,16 @@ jobs:
           $ErrorActionPreference = 'Stop'
 
           $providerEntries = @(
-            '.\UCR\bin\Release\Providers\Core_DS4WindowsApi\Core_DS4WindowsApi.dll',
-            '.\UCR\bin\Release\Providers\Core_Interception\Core_Interception.dll',
-            '.\UCR\bin\Release\Providers\Core_Midi\Core_Midi.dll',
-            '.\UCR\bin\Release\Providers\Core_SpaceMouse\Core_SpaceMouse.dll',
-            '.\UCR\bin\Release\Providers\Core_TitanOne\Core_TitanOne.dll',
-            '.\UCR\bin\Release\Providers\Core_Tobii_Interaction\Core_Tobii_Interaction.dll',
-            '.\UCR\bin\Release\Providers\Core_ViGEm\Core_ViGEm.dll',
-            '.\UCR\bin\Release\Providers\Core_vJoyInterfaceWrap\Core_vJoyInterfaceWrap.dll',
-            '.\UCR\bin\Release\Providers\SharpDX_DirectInput\SharpDX_DirectInput.dll',
-            '.\UCR\bin\Release\Providers\SharpDX_XInput\SharpDX_XInput.dll'
+            '.\UCR\bin\Release\net8.0-windows\Providers\Core_DS4WindowsApi\Core_DS4WindowsApi.dll',
+            '.\UCR\bin\Release\net8.0-windows\Providers\Core_Interception\Core_Interception.dll',
+            '.\UCR\bin\Release\net8.0-windows\Providers\Core_Midi\Core_Midi.dll',
+            '.\UCR\bin\Release\net8.0-windows\Providers\Core_SpaceMouse\Core_SpaceMouse.dll',
+            '.\UCR\bin\Release\net8.0-windows\Providers\Core_TitanOne\Core_TitanOne.dll',
+            '.\UCR\bin\Release\net8.0-windows\Providers\Core_Tobii_Interaction\Core_Tobii_Interaction.dll',
+            '.\UCR\bin\Release\net8.0-windows\Providers\Core_ViGEm\Core_ViGEm.dll',
+            '.\UCR\bin\Release\net8.0-windows\Providers\Core_vJoyInterfaceWrap\Core_vJoyInterfaceWrap.dll',
+            '.\UCR\bin\Release\net8.0-windows\Providers\SharpDX_DirectInput\SharpDX_DirectInput.dll',
+            '.\UCR\bin\Release\net8.0-windows\Providers\SharpDX_XInput\SharpDX_XInput.dll'
           )
 
           foreach ($providerEntry in $providerEntries) {
@@ -500,7 +454,7 @@ jobs:
 
           & $x86PowerShell -NoProfile -NonInteractive -ExecutionPolicy Bypass `
             -File '.\build\verify-provider-composition.ps1' `
-            -RuntimePath '.\UCR\bin\Release'
+            -RuntimePath '.\UCR\bin\Release\net8.0-windows'
           if ($LASTEXITCODE -ne 0) {
             throw "Final provider-composition smoke test failed with exit code $LASTEXITCODE."
           }
@@ -513,7 +467,7 @@ jobs:
           $ErrorActionPreference = 'Stop'
 
           $runner = '.\packages\NUnit.ConsoleRunner.3.9.0\tools\nunit3-console.exe'
-          $tests = '.\UCR.Tests\bin\Release\UCR.Tests.dll'
+          $tests = '.\UCR.Tests\bin\Release\net8.0-windows\UCR.Tests.dll'
           if (-not (Test-Path $runner)) {
             throw "NUnit console runner is missing: $runner"
           }
@@ -525,11 +479,11 @@ jobs:
           # project references do not reliably carry UCR's package dependencies transitively,
           # so require the test output to contain the exact theme assemblies before NUnit runs.
           $testRuntimeDependencies = @(
-            '.\UCR.Tests\bin\Release\MaterialDesignThemes.Wpf.dll',
-            '.\UCR.Tests\bin\Release\MaterialDesignColors.dll',
-            '.\UCR.Tests\bin\Release\IOWrapper.Core.dll',
-            '.\UCR.Tests\bin\Release\IOWrapper.DTOs.dll',
-            '.\UCR.Tests\bin\Release\IOWrapper.IProvider.dll'
+            '.\UCR.Tests\bin\Release\net8.0-windows\MaterialDesignThemes.Wpf.dll',
+            '.\UCR.Tests\bin\Release\net8.0-windows\MaterialDesignColors.dll',
+            '.\UCR.Tests\bin\Release\net8.0-windows\IOWrapper.Core.dll',
+            '.\UCR.Tests\bin\Release\net8.0-windows\IOWrapper.DTOs.dll',
+            '.\UCR.Tests\bin\Release\net8.0-windows\IOWrapper.IProvider.dll'
           )
           foreach ($dependency in $testRuntimeDependencies) {
             if (-not (Test-Path -LiteralPath $dependency -PathType Leaf)) {
@@ -550,5 +504,5 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: UCR-Stylish-Windows
-          path: UCR/bin/Release/
+          path: UCR/bin/Release/net8.0-windows/
           if-no-files-found: error

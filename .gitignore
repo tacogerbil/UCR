@@ -4,6 +4,8 @@
 # OUR stuff
 vault/
 personal/
+.claude/
+.utility/
 
 # Visual Studio
 .vs/
