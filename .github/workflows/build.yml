@@ -118,6 +118,12 @@ jobs:
           $ErrorActionPreference = 'Stop'
           .\build\ProviderPatches\Apply-CoreViGEmDs4Serialization.ps1 -IOWrapperRoot .\submodules\IOWrapper
 
+      - name: Apply IOController dispose pattern fix
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          .\build\ProviderPatches\Apply-IOControllerDisposePattern.ps1 -IOWrapperRoot .\submodules\IOWrapper
+
       - name: Enable Core Interception blocking
         shell: pwsh
         run: |

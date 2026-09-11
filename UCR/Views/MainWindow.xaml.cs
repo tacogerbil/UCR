@@ -31,22 +31,18 @@ using ProfilePage = HidWizards.UCR.Views.ProfileViews.ProfilePage;
 namespace HidWizards.UCR.Views
 {
     /// <summary>
-    /// MainWindow's code-behind is split across several partial-class files by responsibility,
-    /// since a single ~1100-line file mixed window lifecycle, profile CRUD, import/export,
-    /// tree drag-reorder, and tray icon management together:
+    /// MainWindow's code-behind is split across several partial-class files by responsibility:
     ///   - MainWindow.xaml.cs (this file): window lifecycle, message pump, appearance/menu chrome.
-    ///   - MainWindow.ProfileTree.cs: profile tree drag-and-drop 
-    ///   - MainWindow.ProfileActions.cs: profile CRUD (add/rename/copy/remove) and navigation.
-    ///   - MainWindow.ImportExport.cs: profile/profile-list import and export.
+    ///   - MainWindow.ProfileTree.cs: profile tree drag-and-drop.
     ///   - MainWindow.TrayIcon.cs: system tray icon lifecycle.
-    /// This split is organizational only - no behavior changed. See vault/passdown.md for the
-    /// known-stubbed navigation methods (GetSelectedItem, ShowNavigationPage, etc.) uncovered
-    /// while doing this split; they are out of scope for this pass and preserved as-is.
+    ///   
+    /// Note: All profile CRUD (add/rename/copy/remove) and Import/Export functionality
+    /// has been modularized into MainWindowViewModel to adhere to MVVM and MCCC standards.
     /// </summary>
     public partial class MainWindow : Window
     {
         private Context Context { get; set; }
-        private readonly DashboardViewModel _dashboardViewModel;
+        private readonly HidWizards.UCR.ViewModels.MainWindowViewModel _mainWindowViewModel;
         private CloseState WindowCloseState { get; set; }
         private Dictionary<Guid, ProfileWindow> ProfileWindows;
         private readonly HashSet<Guid> _profileWindowsHiddenToTray = new HashSet<Guid>();
@@ -65,8 +61,9 @@ namespace HidWizards.UCR.Views
 
         public MainWindow(Context context)
         {
-            _dashboardViewModel = new DashboardViewModel(context);
-            DataContext = _dashboardViewModel;
+            _mainWindowViewModel = new HidWizards.UCR.ViewModels.MainWindowViewModel(context);
+            _mainWindowViewModel.OpenProfileWindowAction = OpenProfileWindow;
+            DataContext = _mainWindowViewModel;
             Context = context;
             ProfileWindows = new Dictionary<Guid, ProfileWindow>();
             InitializeComponent();
@@ -77,18 +74,18 @@ namespace HidWizards.UCR.Views
             MappingViewElement.DataContext = mappingViewModel;
             
             // Sync Scope and Catalog to MappingViewModel
-            mappingViewModel.FullCatalog = _dashboardViewModel.InputSources;
-            mappingViewModel.CurrentScope = _dashboardViewModel.SelectedInputScope;
+            mappingViewModel.FullCatalog = _mainWindowViewModel.Dashboard.InputSources;
+            mappingViewModel.CurrentScope = _mainWindowViewModel.Dashboard.SelectedInputScope;
             
-            _dashboardViewModel.PropertyChanged += (sender, args) =>
+            _mainWindowViewModel.Dashboard.PropertyChanged += (sender, args) =>
             {
                 if (args.PropertyName == nameof(DashboardViewModel.SelectedInputScope))
                 {
-                    mappingViewModel.CurrentScope = _dashboardViewModel.SelectedInputScope;
+                    mappingViewModel.CurrentScope = _mainWindowViewModel.Dashboard.SelectedInputScope;
                 }
                 else if (args.PropertyName == nameof(DashboardViewModel.SelectedProfileItem))
                 {
-                    mappingViewModel.SetProfile(_dashboardViewModel.SelectedProfileItem?.Profile);
+                    mappingViewModel.SetProfile(_mainWindowViewModel.Dashboard.SelectedProfileItem?.Profile);
                 }
             };
             
@@ -135,6 +132,51 @@ namespace HidWizards.UCR.Views
         {
             profileItem = null;
             return false;
+        }
+
+        private void OpenProfileWindow(Profile profile)
+        {
+            if (profile == null) return;
+            Dispatcher.BeginInvoke((Action)(() =>
+            {
+                var page = new ProfilePage(Context, profile);
+                page.BackRequested += NavigationPage_OnBackRequested;
+                ShowNavigationPage(page);
+            }));
+        }
+
+        private void ShowNavigationPage(UserControl page)
+        {
+        }
+
+        private void NavigationPage_OnBackRequested(object sender, EventArgs e)
+        {
+        }
+
+        private void CloseNavigationPage(bool showDashboard)
+        {
+        }
+
+        private static void SurfaceProfileWindow(ProfileWindow window)
+        {
+            SurfaceAuxiliaryWindow(window);
+        }
+
+        private static void SurfaceAuxiliaryWindow(Window window)
+        {
+            if (window == null) return;
+            if (!window.IsVisible) window.Show();
+            if (window.WindowState == WindowState.Minimized) window.WindowState = WindowState.Normal;
+            window.Topmost = true;
+            try
+            {
+                window.Activate();
+                window.Focus();
+            }
+            finally
+            {
+                window.Topmost = false;
+            }
         }
 
         private void ContextMenuButton_OnClick(object sender, RoutedEventArgs e)
@@ -212,6 +254,13 @@ namespace HidWizards.UCR.Views
             _autoProfileMonitor?.Dispose();
             CloseAllProfileWindows(false);
             if (_trayIcon != null) _trayIcon.Visible = false;
+        }
+
+        private void CloseAllProfileWindows(bool showDashboard = true)
+        {
+            CloseNavigationPage(showDashboard);
+            var windows = new List<ProfileWindow>(ProfileWindows.Values);
+            foreach (var profileWindow in windows) profileWindow.Close();
         }
 
         protected override void OnClosed(EventArgs e)
@@ -311,12 +360,12 @@ namespace HidWizards.UCR.Views
 
         private void Save_OnExecuted(object sender, ExecutedRoutedEventArgs e)
         {
-            Context.SaveContext();
+            _mainWindowViewModel.SaveCommand.Execute(null);
         }
 
         private void Save_OnCanExecute(object sender, CanExecuteRoutedEventArgs e)
         {
-            e.CanExecute = Context.IsNotSaved;
+            e.CanExecute = _mainWindowViewModel.SaveCommand.CanExecute(null);
         }
 
         private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)

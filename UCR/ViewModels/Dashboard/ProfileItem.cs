@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -45,6 +45,16 @@ namespace HidWizards.UCR.ViewModels.Dashboard
         public string Title { get; set; }
         public Guid Id { get; set; }
         public Profile Profile { get; set; }
+
+        public string ChipTitle
+        {
+            get
+            {
+                var exe = Profile?.AutoActivateApplications?.FirstOrDefault()?.Executable;
+                if (string.IsNullOrEmpty(exe)) return Title;
+                return $"{Title} - {System.IO.Path.GetFileName(exe)}";
+            }
+        }
         public ObservableCollection<ProfileItem> Items { get; set; }
         public ObservableCollection<DeviceVisualDescriptor> InputVisuals { get; set; }
         public ObservableCollection<DeviceVisualDescriptor> OutputVisuals { get; set; }

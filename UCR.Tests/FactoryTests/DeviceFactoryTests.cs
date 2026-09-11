@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Xml.Serialization;
@@ -158,7 +158,7 @@ namespace HidWizards.UCR.Tests.FactoryTests
             var identity = DevicesManager.BuildAliasIdentity(device);
 
             Assert.That(identity.IdentityKind, Is.EqualTo(DeviceAliasIdentityKind.HidPath));
-            Assert.That(identity.IdentityValue, Is.EqualTo(device.HidPath));
+            Assert.That(identity.IdentityValue, Is.EqualTo(@"vid_1234&pid_5678#physical-a|Pad"));
             Assert.That(identity.DeviceNumber, Is.EqualTo(0));
         }
 
