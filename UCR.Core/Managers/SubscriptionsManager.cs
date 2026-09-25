@@ -44,7 +44,7 @@ namespace HidWizards.UCR.Core.Managers
 
         public bool ActivateProfile(Profile profile, bool refreshDevices = true)
         {
-            if (refreshDevices) _context.IOController.RefreshDevices();
+            if (refreshDevices) _context.IOController?.RefreshDevices();
 
             if (profile.PruneUndefinedFilterReferencesRecursive())
             {
@@ -120,6 +120,41 @@ namespace HidWizards.UCR.Core.Managers
             ProfileActive = false;
 
             return success;
+        }
+
+        // ActivateProfile only builds SubscriptionState once, from whatever Mapping/DeviceBinding
+        // graph the profile has AT THAT MOMENT (see PopulateSubscriptionStateForProfile/AddMappings),
+        // and then short-circuits on every later call for the same profile (line 56 above). The Patch
+        // Bay creates each row's plugin/DeviceBinding lazily -- only when its Listen button is first
+        // clicked, well after Begin Mapping already activated the profile -- so a binding completed
+        // during a live mapping session was never in that original snapshot and never got subscribed
+        // to real input at all: Listen mode could still capture it (that goes through IOController's
+        // separate Bind-mode detector, not this subscription), but moving the control afterwards would
+        // never reach the output device. DeviceBinding.SetKeyTypeValue/ClearBinding call this so the
+        // live subscription always reflects the profile's current mapping graph. A full deactivate +
+        // rebuild (rather than patching in just the one changed binding) is deliberate: it guarantees
+        // correctness against shadow clones, filter over rides, and parent-profile mappings without a
+        // second, easily-drifting incremental-update path to keep in sync with AddMappings.
+        public bool RefreshSubscriptionsIfActive(Profile profile)
+        {
+            if (profile == null || SubscriptionState == null) return true;
+            if (!IsProfileInActiveChain(profile)) return true;
+
+            var activeProfile = SubscriptionState.ActiveProfile;
+            var success = DeactivateProfile(SubscriptionState);
+            SubscriptionState = null; // Let ActivateProfile rebuild instead of short-circuiting.
+            return ActivateProfile(activeProfile, false) && success;
+        }
+
+        private bool IsProfileInActiveChain(Profile profile)
+        {
+            var current = SubscriptionState?.ActiveProfile;
+            while (current != null)
+            {
+                if (current.Guid == profile.Guid) return true;
+                current = current.ParentProfile;
+            }
+            return false;
         }
 
         public bool DeactivateProfile(SubscriptionState state)

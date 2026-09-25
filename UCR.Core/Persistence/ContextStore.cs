@@ -17,6 +17,7 @@ namespace HidWizards.UCR.Core.Persistence
         private const int BackupLimitPerFile = 5;
         private const string StateFileName = "state.json";
         private const string DevicesFileName = "devices.json";
+        private const string GroupsFileName = "groups.json";
         private static readonly Logger Logger = LogManager.GetCurrentClassLogger();
 
         public string RootPath { get; }
@@ -25,6 +26,7 @@ namespace HidWizards.UCR.Core.Persistence
         public string BackupsRoot { get; }
         public string StatePath { get; }
         public string DevicesPath { get; }
+        public string GroupsPath { get; }
         public string LegacyContextPath { get; }
 
         public ContextStore(string rootPath, string legacyContextPath)
@@ -36,6 +38,7 @@ namespace HidWizards.UCR.Core.Persistence
             BackupsRoot = Path.Combine(RootPath, "Backups");
             StatePath = Path.Combine(RootPath, StateFileName);
             DevicesPath = Path.Combine(RootPath, DevicesFileName);
+            GroupsPath = Path.Combine(RootPath, GroupsFileName);
             LegacyContextPath = string.IsNullOrWhiteSpace(legacyContextPath) ? null : Path.GetFullPath(legacyContextPath);
         }
 
@@ -118,6 +121,14 @@ namespace HidWizards.UCR.Core.Persistence
             };
             AtomicWrite(DevicesPath, serializer.Serialize(devices), json => ValidateDevicesFile(serializer.Deserialize<DevicesFile>(json)));
 
+            var groups = new GroupsFile
+            {
+                SchemaVersion = SchemaVersion,
+                DeviceGroups = context.DeviceGroups ?? new List<DeviceGroup>(),
+                ScopeProfileAssociations = context.ScopeProfileAssociations ?? new Dictionary<string, Guid>()
+            };
+            AtomicWrite(GroupsPath, serializer.Serialize(groups), json => ValidateGroupsFile(serializer.Deserialize<GroupsFile>(json)));
+
             // State is deliberately committed last. It is the manifest that defines the ordered live set.
             var state = new StateFile
             {
@@ -164,11 +175,20 @@ namespace HidWizards.UCR.Core.Persistence
             // a missing devices file is corruption, not an intentionally empty alias list.
             var devices = ReadWithBackup(DevicesPath, serializer.Deserialize<DevicesFile>, ValidateDevicesFile);
 
+            // groups.json postdates the original store format. A missing file means "no groups saved
+            // yet" (an existing install predating this feature), not corruption.
+            var groups = File.Exists(GroupsPath) || GetBackupFiles(GroupsPath).Any()
+                ? ReadWithBackup(GroupsPath, serializer.Deserialize<GroupsFile>, ValidateGroupsFile)
+                : new GroupsFile { SchemaVersion = SchemaVersion, DeviceGroups = new List<DeviceGroup>(), ScopeProfileAssociations = new Dictionary<string, Guid>() };
+
             var context = new Context(this);
             context.Profiles.Clear();
             context.Profiles.AddRange(profiles);
             context.DeviceAliases.Clear();
             context.DeviceAliases.AddRange(devices.DeviceAliases ?? new List<DeviceAlias>());
+            context.DeviceGroups.Clear();
+            context.DeviceGroups.AddRange(groups.DeviceGroups ?? new List<DeviceGroup>());
+            context.ScopeProfileAssociations = groups.ScopeProfileAssociations ?? new Dictionary<string, Guid>();
             context.PostLoad();
             return context;
         }
@@ -514,6 +534,20 @@ namespace HidWizards.UCR.Core.Persistence
             if (devices.DeviceAliases == null) throw new InvalidDataException("devices.json is missing deviceAliases.");
         }
 
+        private static void ValidateGroupsFile(GroupsFile groups)
+        {
+            if (groups == null) throw new InvalidDataException("groups.json contained no data.");
+            if (groups.SchemaVersion != SchemaVersion) throw new InvalidDataException("Unsupported UCR groups schema version: " + groups.SchemaVersion);
+            if (groups.DeviceGroups == null) throw new InvalidDataException("groups.json is missing deviceGroups.");
+            if (groups.ScopeProfileAssociations == null) throw new InvalidDataException("groups.json is missing scopeProfileAssociations.");
+            foreach (var group in groups.DeviceGroups)
+            {
+                if (group == null) throw new InvalidDataException("groups.json contains a null device group.");
+                if (group.Guid == Guid.Empty) throw new InvalidDataException("groups.json contains a device group with an empty identifier.");
+                if (group.MemberDeviceIdentities == null) throw new InvalidDataException("groups.json device group is missing its member list: " + group.Guid);
+            }
+        }
+
         private string GetProfilePath(Guid profileId)
         {
             return Path.Combine(ProfilesRoot, profileId.ToString("D") + ".json");
@@ -706,6 +740,13 @@ namespace HidWizards.UCR.Core.Persistence
         {
             public int SchemaVersion { get; set; }
             public List<DeviceAlias> DeviceAliases { get; set; }
+        }
+
+        internal sealed class GroupsFile
+        {
+            public int SchemaVersion { get; set; }
+            public List<DeviceGroup> DeviceGroups { get; set; }
+            public Dictionary<string, Guid> ScopeProfileAssociations { get; set; }
         }
 
         internal sealed class ProfileFile

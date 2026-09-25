@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using HidWizards.UCR.Core;
@@ -26,14 +27,10 @@ namespace HidWizards.UCR.ViewModels
 
         public ICommand ActivateProfileCommand { get; }
         public ICommand DeactivateProfileCommand { get; }
-        public ICommand AddProfileCommand { get; }
-        public ICommand GameProfileCommand { get; }
         public ICommand EditProfileCommand { get; }
         public ICommand ImportExportCommand { get; }
         public ICommand SaveCommand { get; }
 
-        public Action<Profile> OpenProfileWindowAction { get; set; }
-        
         public event PropertyChangedEventHandler PropertyChanged;
 
         public MainWindowViewModel(Context context)
@@ -45,13 +42,22 @@ namespace HidWizards.UCR.ViewModels
 
             ActivateProfileCommand = new RelayCommand(ActivateProfile, _ => Dashboard.CanActivateProfile);
             DeactivateProfileCommand = new RelayCommand(DeactivateProfile, _ => Dashboard.CanDeactivateProfile);
-            AddProfileCommand = new RelayCommand(AddProfile);
-            GameProfileCommand = new RelayCommand(GameProfile);
             EditProfileCommand = new RelayCommand(EditProfile, _ => Dashboard.SelectedProfileItem != null);
             ImportExportCommand = new RelayCommand(ImportExport);
             SaveCommand = new RelayCommand(Save, _ => _context.IsNotSaved);
 
             _context.ActiveProfileChangedEvent += OnActiveProfileChangedEvent;
+        }
+
+        // Entry point for opening the profile editor from somewhere other than the profile tree
+        // (e.g. the Devices tab's "Edit" action on a scope's associated profile) — reuses the exact
+        // same EditProfileCommand flow rather than duplicating its dialog/save logic.
+        public void EditProfileByGuid(Guid profileGuid)
+        {
+            var item = FindProfileItemById(Dashboard.ProfileList, profileGuid);
+            if (item == null) return;
+            Dashboard.SelectedProfileItem = item;
+            EditProfileCommand.Execute(null);
         }
 
         private void Dashboard_PropertyChanged(object sender, PropertyChangedEventArgs e)
@@ -95,54 +101,6 @@ namespace HidWizards.UCR.ViewModels
             }
         }
 
-        private Profile CreateAndRegisterProfile(string name, Action<Profile> beforeAdd = null)
-        {
-            var profile = _context.ProfilesManager.CreateProfile(name, new List<DeviceConfiguration>(), new List<DeviceConfiguration>());
-            beforeAdd?.Invoke(profile);
-            _context.ProfilesManager.AddProfile(profile);
-            return profile;
-        }
-
-        private void AddProfile(object parameter)
-        {
-            var profile = CreateAndRegisterProfile("New profile");
-            ReloadProfileTree();
-            OpenProfileWindowAction?.Invoke(profile);
-        }
-
-        private async void GameProfile(object parameter)
-        {
-            if (Dashboard.SelectedProfileItem != null)
-            {
-                OpenProfileWindowAction?.Invoke(Dashboard.SelectedProfileItem.Profile);
-                return;
-            }
-
-            var dialog = new OpenFileDialog { Filter = "Executables (*.exe)|*.exe", Title = "Select Game Executable" };
-            if (dialog.ShowDialog() == true)
-            {
-                var filePath = dialog.FileName;
-                var fileName = Path.GetFileNameWithoutExtension(filePath);
-                var stringDialog = new StringDialog("New Game Profile", "Enter profile name", fileName);
-                var result = await DialogHost.Show(stringDialog, "RootDialog");
-                if (result == null || string.IsNullOrWhiteSpace(result.ToString())) return;
-
-                var profileName = result.ToString();
-                var profile = CreateAndRegisterProfile(profileName, p =>
-                {
-                    p.AutoActivateApplications.Add(new ProfileApplicationRule(filePath));
-                });
-                ReloadProfileTree();
-                
-                var newProfileItem = FindProfileItemById(Dashboard.ProfileList, profile.Guid);
-                if (newProfileItem != null)
-                {
-                    Dashboard.SelectedProfileItem = newProfileItem;
-                    OpenProfileWindowAction?.Invoke(profile);
-                }
-            }
-        }
-
         private ProfileItem FindProfileItemById(IEnumerable<ProfileItem> items, Guid id)
         {
             if (items == null) return null;
@@ -166,107 +124,176 @@ namespace HidWizards.UCR.ViewModels
 
             vm.CloseDialogAction = action => DialogHost.CloseDialogCommand.Execute(action, dialog);
 
-            var result = await DialogHost.Show(dialog, "RootDialog");
-            
-            if (result is string resultStr)
+            try
             {
-                if (resultStr != "Save" && resultStr != "Clone" && vm.IsDirty)
+                var result = await DialogHost.Show(dialog, "RootDialog");
+
+                // Every result except Save/Clone discards unsaved changes outright, so confirm first.
+                // Save/Clone is exempt because it's still the vehicle that carries those changes forward.
+                var isSaveOrClone = result is ProfileEditResult.Clone || (result as string) == "Save";
+                if (!isSaveOrClone && vm.IsDirty && !await ConfirmDiscardChanges())
                 {
-                    var discardDialog = new BoolDialog("Unsaved Changes", "There are unsaved changes. Discard them and proceed?");
-                    var discardResult = (bool?)await DialogHost.Show(discardDialog, "RootDialog");
-                    if (discardResult != true) return;
+                    return;
                 }
 
-                if (resultStr == "Clone")
+                if (result is ProfileEditResult profileEditResult)
                 {
-                    var copyDialog = new StringDialog("Copy profile", "Profile name", vm.ProfileName + " Clone");
-                    var cloneResult = (bool?)await DialogHost.Show(copyDialog, "RootDialog");
-                    if (cloneResult == true && !string.IsNullOrWhiteSpace(copyDialog.Value))
-                    {
-                        var clonedProfile = _context.ProfilesManager.CopyProfile(profile, copyDialog.Value);
-                        if (clonedProfile != null)
-                        {
-                            clonedProfile.AutoActivateApplications.Clear();
-                            foreach (var rule in vm.AutoActivateApplications)
-                            {
-                                clonedProfile.AutoActivateApplications.Add(rule);
-                            }
-                        }
-                        ReloadProfileTree();
-                    }
+                    await HandleProfileEditResult(profileEditResult, profile, vm);
                 }
-                else if (resultStr == "Remove")
+                else if ((result as string) == "Save")
                 {
-                    profile.Remove();
-                    ReloadProfileTree();
+                    await HandleSaveResult(profile, vm);
                 }
-                else if (resultStr == "AddChild")
-                {
-                    var childProfile = _context.ProfilesManager.CreateProfile("New profile", new List<DeviceConfiguration>(), new List<DeviceConfiguration>());
-                    _context.ProfilesManager.AddProfile(childProfile, profile);
-                    ReloadProfileTree();
-                    OpenProfileWindowAction?.Invoke(childProfile);
-                }
-                else if (resultStr == "ImportChild")
-                {
-                    var openDialog = new OpenFileDialog
-                    {
-                        Title = "Import child profile",
-                        Filter = "UCR profile (*.ucrprofile)|*.ucrprofile",
-                        CheckFileExists = true
-                    };
-                    if (openDialog.ShowDialog() == true)
-                    {
-                        ImportProfilePackageFromPath(openDialog.FileName, profile);
-                    }
-                }
-                else if (resultStr == "Export")
-                {
-                    var saveDialog = new SaveFileDialog
-                    {
-                        Title = "Export profile",
-                        Filter = "Selected profile (*.ucrprofile)|*.ucrprofile",
-                        DefaultExt = ".ucrprofile",
-                        FileName = SanitizeFileName(profile.Title) + ".ucrprofile",
-                        AddExtension = true
-                    };
-                    if (saveDialog.ShowDialog() == true)
-                    {
-                        var exportPath = EnsureExtension(saveDialog.FileName, ".ucrprofile");
-                        _context.ProfilesManager.ExportProfile(profile, exportPath);
-                        HidWizards.UCR.Utilities.DarkMessageBox.Show("Profile exported successfully.", "Export profile", MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
-                }
-                else if (resultStr == "Save")
-                {
-                    if (vm.IsDirty)
-                    {
-                        var promptDialog = new TwoChoiceDialog("Unsaved Changes", "Do you want to overwrite the existing profile, or clone these changes to a new profile?", "Overwrite", "Clone");
-                        var promptResult = await DialogHost.Show(promptDialog, "RootDialog");
-                        if (promptResult is bool overwrite)
-                        {
-                            if (overwrite) // Overwrite
-                            {
-                                vm.SaveToProfile();
-                                ReloadProfileTree();
-                            }
-                            else // Clone
-                            {
-                                var newProfileTitle = vm.ProfileName;
-                                var clonedProfile = _context.ProfilesManager.CopyProfile(profile, newProfileTitle);
-                                if (clonedProfile != null)
-                                {
-                                    clonedProfile.AutoActivateApplications.Clear();
-                                    foreach (var rule in vm.AutoActivateApplications)
-                                    {
-                                        clonedProfile.AutoActivateApplications.Add(rule);
-                                    }
-                                }
-                                ReloadProfileTree();
-                            }
-                        }
-                    }
-                }
+            }
+            finally
+            {
+                vm.Dispose();
+            }
+        }
+
+        private async Task<bool> ConfirmDiscardChanges()
+        {
+            var discardDialog = new BoolDialog("Unsaved Changes", "There are unsaved changes. Discard them and proceed?");
+            var discardResult = (bool?)await DialogHost.Show(discardDialog, "RootDialog");
+            return discardResult == true;
+        }
+
+        private async Task HandleProfileEditResult(ProfileEditResult result, Profile profile, ProfileEditDialogViewModel vm)
+        {
+            switch (result)
+            {
+                case ProfileEditResult.Clone:
+                    await HandleCloneResult(profile, vm);
+                    break;
+                case ProfileEditResult.Remove:
+                    ExecuteRemove(profile);
+                    break;
+                case ProfileEditResult.AddChild:
+                    HandleAddChildResult(profile);
+                    break;
+                case ProfileEditResult.ImportChild:
+                    HandleImportChildResult(profile);
+                    break;
+                case ProfileEditResult.Export:
+                    HandleExportResult(profile);
+                    break;
+            }
+        }
+
+        // Every Handle* method below is a thin UI wrapper (shows a dialog or file picker, then hands
+        // the user's actual answer to an Execute* method) rather than doing the decision logic itself.
+        // DialogHost.Show/OpenFileDialog/SaveFileDialog all need a live window and can't run headless,
+        // so splitting it this way is what makes the Execute* half unit-testable at all -- see
+        // MainWindowViewModelTests.cs.
+
+        private async Task HandleCloneResult(Profile profile, ProfileEditDialogViewModel vm)
+        {
+            var copyDialog = new StringDialog("Copy profile", "Profile name", vm.ProfileName + " Clone");
+            var cloneResult = (bool?)await DialogHost.Show(copyDialog, "RootDialog");
+            if (cloneResult != true) return;
+
+            ExecuteClone(profile, copyDialog.Value, vm.AutoActivateApplications);
+        }
+
+        // Returns the cloned Profile, or null if newName was blank (nothing to clone into).
+        internal Profile ExecuteClone(Profile profile, string newName, IEnumerable<ProfileApplicationRule> rules)
+        {
+            if (string.IsNullOrWhiteSpace(newName)) return null;
+
+            var clonedProfile = _context.ProfilesManager.CopyProfile(profile, newName);
+            ApplyAutoActivateRules(clonedProfile, rules);
+            ReloadProfileTree();
+            return clonedProfile;
+        }
+
+        internal void ExecuteRemove(Profile profile)
+        {
+            profile.Remove();
+            ReloadProfileTree();
+        }
+
+        // "ADD CHILD" used to route through OpenProfileWindowAction -> MainWindow.xaml.cs's
+        // ShowNavigationPage, which turned out to be a dead stub left over from the removed
+        // ProfileTree/nested-tab UI (see vault/passdown.md) -- the child profile was created but its
+        // editor never actually opened. EditProfileByGuid is the same "open this profile's editor"
+        // entry point the Devices tab's "Edit" action already uses, so this now genuinely opens it.
+        private void HandleAddChildResult(Profile profile)
+        {
+            var childProfile = ExecuteAddChild(profile);
+            EditProfileByGuid(childProfile.Guid);
+        }
+
+        internal Profile ExecuteAddChild(Profile parentProfile)
+        {
+            var childProfile = _context.ProfilesManager.CreateProfile("New profile", new List<DeviceConfiguration>(), new List<DeviceConfiguration>());
+            _context.ProfilesManager.AddProfile(childProfile, parentProfile);
+            ReloadProfileTree();
+            return childProfile;
+        }
+
+        private void HandleImportChildResult(Profile profile)
+        {
+            var openDialog = new OpenFileDialog
+            {
+                Title = "Import child profile",
+                Filter = "UCR profile (*.ucrprofile)|*.ucrprofile",
+                CheckFileExists = true
+            };
+            if (openDialog.ShowDialog() == true)
+            {
+                ImportProfilePackageFromPath(openDialog.FileName, profile);
+            }
+        }
+
+        private void HandleExportResult(Profile profile)
+        {
+            var saveDialog = new SaveFileDialog
+            {
+                Title = "Export profile",
+                Filter = "Selected profile (*.ucrprofile)|*.ucrprofile",
+                DefaultExt = ".ucrprofile",
+                FileName = SanitizeFileName(profile.Title) + ".ucrprofile",
+                AddExtension = true
+            };
+            if (saveDialog.ShowDialog() == true)
+            {
+                var exportPath = EnsureExtension(saveDialog.FileName, ".ucrprofile");
+                _context.ProfilesManager.ExportProfile(profile, exportPath);
+                HidWizards.UCR.Utilities.DarkMessageBox.Show("Profile exported successfully.", "Export profile", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+
+        private async Task HandleSaveResult(Profile profile, ProfileEditDialogViewModel vm)
+        {
+            if (!vm.IsDirty) return;
+
+            var promptDialog = new TwoChoiceDialog("Unsaved Changes", "Do you want to overwrite the existing profile, or clone these changes to a new profile?", "Overwrite", "Clone");
+            var promptResult = await DialogHost.Show(promptDialog, "RootDialog");
+            if (!(promptResult is bool overwrite)) return;
+
+            if (overwrite)
+            {
+                ExecuteSaveOverwrite(vm);
+            }
+            else
+            {
+                ExecuteClone(profile, vm.ProfileName, vm.AutoActivateApplications);
+            }
+        }
+
+        internal void ExecuteSaveOverwrite(ProfileEditDialogViewModel vm)
+        {
+            vm.SaveToProfile();
+            ReloadProfileTree();
+        }
+
+        internal static void ApplyAutoActivateRules(Profile profile, IEnumerable<ProfileApplicationRule> rules)
+        {
+            if (profile == null) return;
+            profile.AutoActivateApplications.Clear();
+            foreach (var rule in rules)
+            {
+                profile.AutoActivateApplications.Add(rule);
             }
         }
 
@@ -404,7 +431,10 @@ namespace HidWizards.UCR.ViewModels
             return Path.ChangeExtension(filePath, extension.TrimStart('.'));
         }
 
-        private void ReloadProfileTree()
+        // Public: also called after profile creation flows that don't otherwise touch this
+        // ViewModel (e.g. the Devices tab's SelectProfileDialog), so Dashboard.ProfileList — and
+        // therefore FindProfileItem/EditProfileByGuid/ExecuteBeginMapping's lookup — doesn't go stale.
+        public void ReloadProfileTree()
         {
             Dashboard.ReplaceProfileList(ProfileItem.GetProfileTree(_context.Profiles));
         }

@@ -114,6 +114,13 @@ namespace HidWizards.UCR.ViewModels.Dashboard
                 Devices.Add(new DeviceItem(device, profile, deviceIoType));
             }
 
+            // Nothing else selects a default: this ViewModel is also constructed non-interactively by
+            // DashboardViewModel.BuildDeviceLists() to feed PatchBayViewModel's SelectedOutputDeviceConfiguration
+            // (see PatchBayViewModel.ObserveOutputDeviceControl), so leaving SelectedDeviceConfiguration
+            // null here means the Patch Bay shows its empty state even when the profile genuinely has
+            // an output device configured. The primary device (sorted first above) is the correct default.
+            SelectedDeviceConfiguration = Devices.FirstOrDefault();
+
             RefreshPrimaryState();
         }
 
@@ -160,7 +167,7 @@ namespace HidWizards.UCR.ViewModels.Dashboard
             OnPropertyChanged(nameof(Devices));
         }
 
-        public async void AddDevices()
+        public async Task AddDevices()
         {
             var deviceList = _profile.GetMissingDeviceList(_deviceIoType);
             var dialog = new AddDevicesDialog(deviceList, _deviceIoType, _profile.Context.DevicesManager);

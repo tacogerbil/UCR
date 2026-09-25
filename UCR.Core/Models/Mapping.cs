@@ -58,6 +58,15 @@ namespace HidWizards.UCR.Core.Models
             }
         }
 
+        // Stable identity used to match a mapping against its parent-profile counterpart for
+        // override purposes. Patch Bay rows set TargetOutputKey to a device-schema-relative slot key
+        // (OutputSlotResolver.SlotKey), which is safe to compare across profiles regardless of
+        // display text. Mappings created without a TargetOutputKey (the legacy nested-tab UI, or
+        // profiles saved before the Patch Bay existed) fall back to Title, preserving prior behavior
+        // for that path.
+        [XmlIgnore]
+        internal string OverrideIdentity => string.IsNullOrEmpty(TargetOutputKey) ? Title : TargetOutputKey;
+
         public Mapping()
         {
             DeviceBindings = new List<DeviceBinding>();
@@ -117,7 +126,7 @@ namespace HidWizards.UCR.Core.Models
             {
                 var mapping = list[0];
                 list.RemoveAt(0);
-                if (string.Compare(Title, mapping.Title, StringComparison.CurrentCultureIgnoreCase) == 0)
+                if (string.Compare(OverrideIdentity, mapping.OverrideIdentity, StringComparison.CurrentCultureIgnoreCase) == 0)
                 {
                     return mapping;
                 }

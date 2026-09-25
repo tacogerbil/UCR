@@ -29,6 +29,7 @@ namespace HidWizards.UCR.Views.Controls
         {
             var viewModel = DataContext as DeviceAddRemoveControlViewModel;
             var device = (sender as Grid)?.DataContext as DeviceViewModel;
+            if (viewModel == null || device == null) return;
             viewModel.AddShadowDevice(device);
         }
 
@@ -36,6 +37,7 @@ namespace HidWizards.UCR.Views.Controls
         {
             var viewModel = DataContext as DeviceAddRemoveControlViewModel;
             var device = (sender as Grid)?.DataContext as DeviceViewModel;
+            if (viewModel == null || device == null) return;
             viewModel.RemoveShadowDevice(device);
         }
     }

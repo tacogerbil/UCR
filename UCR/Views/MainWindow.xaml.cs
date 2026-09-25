@@ -25,17 +25,17 @@ using HidWizards.UCR.Views.Dialogs;
 using MaterialDesignThemes.Wpf;
 using Microsoft.Win32;
 using Forms = System.Windows.Forms;
-using ProfileWindow = HidWizards.UCR.Views.ProfileViews.ProfileWindow;
-using ProfilePage = HidWizards.UCR.Views.ProfileViews.ProfilePage;
 
 namespace HidWizards.UCR.Views
 {
     /// <summary>
-    /// MainWindow's code-behind is split across several partial-class files by responsibility:
+    /// MainWindow's code-behind is split across partial-class files by responsibility:
     ///   - MainWindow.xaml.cs (this file): window lifecycle, message pump, appearance/menu chrome.
-    ///   - MainWindow.ProfileTree.cs: profile tree drag-and-drop.
     ///   - MainWindow.TrayIcon.cs: system tray icon lifecycle.
-    ///   
+    ///
+    /// The old ProfileTree TreeView (and its drag-and-drop partial-class file) was removed when the
+    /// Simplified UI's Game Profile toolbar chip replaced it; see vault/passdown.md, Phase 2.
+    ///
     /// Note: All profile CRUD (add/rename/copy/remove) and Import/Export functionality
     /// has been modularized into MainWindowViewModel to adhere to MVVM and MCCC standards.
     /// </summary>
@@ -44,14 +44,10 @@ namespace HidWizards.UCR.Views
         private Context Context { get; set; }
         private readonly HidWizards.UCR.ViewModels.MainWindowViewModel _mainWindowViewModel;
         private CloseState WindowCloseState { get; set; }
-        private Dictionary<Guid, ProfileWindow> ProfileWindows;
-        private readonly HashSet<Guid> _profileWindowsHiddenToTray = new HashSet<Guid>();
         private Forms.NotifyIcon _trayIcon;
         private Forms.ToolStripMenuItem _stopCurrentProfileMenuItem;
         private readonly AutoProfileMonitor _autoProfileMonitor;
         private bool _exitRequested;
-        private IDisposable _navigationPage;
-
         enum CloseState
         {
             None,
@@ -62,30 +58,40 @@ namespace HidWizards.UCR.Views
         public MainWindow(Context context)
         {
             _mainWindowViewModel = new HidWizards.UCR.ViewModels.MainWindowViewModel(context);
-            _mainWindowViewModel.OpenProfileWindowAction = OpenProfileWindow;
             DataContext = _mainWindowViewModel;
             Context = context;
-            ProfileWindows = new Dictionary<Guid, ProfileWindow>();
             InitializeComponent();
             
-            DevicesViewElement.DataContext = new HidWizards.UCR.ViewModels.Devices.DevicesViewModel(context);
-            
-            var mappingViewModel = new HidWizards.UCR.ViewModels.Mapping.MappingViewModel(context);
-            MappingViewElement.DataContext = mappingViewModel;
-            
-            // Sync Scope and Catalog to MappingViewModel
-            mappingViewModel.FullCatalog = _mainWindowViewModel.Dashboard.InputSources;
-            mappingViewModel.CurrentScope = _mainWindowViewModel.Dashboard.SelectedInputScope;
-            
+            var devicesViewModel = new HidWizards.UCR.ViewModels.Devices.DevicesViewModel(context);
+            DevicesViewElement.DataContext = devicesViewModel;
+
+            // Selecting a device/group on the Devices tab is now what drives the Mapping scope
+            // (replaces the old toolbar Input Scope dropdown).
+            devicesViewModel.ScopeSelectionChanged = scope => _mainWindowViewModel.Dashboard.SelectedInputScope = scope;
+            devicesViewModel.RequestChooseProfile = ShowSelectProfileDialog;
+            devicesViewModel.RequestEditProfile = profile => _mainWindowViewModel.EditProfileByGuid(profile.Guid);
+
+            var patchBayViewModel = new HidWizards.UCR.ViewModels.Mapping.PatchBayViewModel(context);
+            MappingViewElement.DataContext = patchBayViewModel;
+
+            // Sync Scope and Catalog to the Patch Bay
+            patchBayViewModel.FullCatalog = _mainWindowViewModel.Dashboard.InputSources;
+            patchBayViewModel.CurrentScope = _mainWindowViewModel.Dashboard.SelectedInputScope;
+
+            // Patch Bay rows are generated from whichever Output Device the toolbar has selected;
+            // this keeps them in sync for the lifetime of the window (see PatchBayViewModel.AttachToDashboard).
+            patchBayViewModel.AttachToDashboard(_mainWindowViewModel.Dashboard);
+            _mainWindowViewModel.Dashboard.RequestShowMapping = () => MappingViewRadio.IsChecked = true;
+
             _mainWindowViewModel.Dashboard.PropertyChanged += (sender, args) =>
             {
                 if (args.PropertyName == nameof(DashboardViewModel.SelectedInputScope))
                 {
-                    mappingViewModel.CurrentScope = _mainWindowViewModel.Dashboard.SelectedInputScope;
+                    patchBayViewModel.CurrentScope = _mainWindowViewModel.Dashboard.SelectedInputScope;
                 }
                 else if (args.PropertyName == nameof(DashboardViewModel.SelectedProfileItem))
                 {
-                    mappingViewModel.SetProfile(_mainWindowViewModel.Dashboard.SelectedProfileItem?.Profile);
+                    patchBayViewModel.SetProfile(_mainWindowViewModel.Dashboard.SelectedProfileItem?.Profile);
                 }
             };
             
@@ -122,63 +128,6 @@ namespace HidWizards.UCR.Views
             hwndSource?.AddHook(WndProc);
         }
 
-        // NOTE: Always returns false - there is no wired-up source for the "currently selected
-        // profile" anymore since the ProfileTree TreeView was removed (see vault/passdown.md,
-        // Phase 2). Every caller ("Rename", "Copy", "Remove", "Activate", auto-activate rule
-        // editing, child-profile add/import, etc.) short-circuits on this and is currently a
-        // no-op. Left unchanged here - fixing the selection source is a functional change
-        // outside the scope of this pass. Flagged in vault/diary and passdown for follow-up.
-        private bool GetSelectedItem(out ProfileItem profileItem)
-        {
-            profileItem = null;
-            return false;
-        }
-
-        private void OpenProfileWindow(Profile profile)
-        {
-            if (profile == null) return;
-            Dispatcher.BeginInvoke((Action)(() =>
-            {
-                var page = new ProfilePage(Context, profile);
-                page.BackRequested += NavigationPage_OnBackRequested;
-                ShowNavigationPage(page);
-            }));
-        }
-
-        private void ShowNavigationPage(UserControl page)
-        {
-        }
-
-        private void NavigationPage_OnBackRequested(object sender, EventArgs e)
-        {
-        }
-
-        private void CloseNavigationPage(bool showDashboard)
-        {
-        }
-
-        private static void SurfaceProfileWindow(ProfileWindow window)
-        {
-            SurfaceAuxiliaryWindow(window);
-        }
-
-        private static void SurfaceAuxiliaryWindow(Window window)
-        {
-            if (window == null) return;
-            if (!window.IsVisible) window.Show();
-            if (window.WindowState == WindowState.Minimized) window.WindowState = WindowState.Normal;
-            window.Topmost = true;
-            try
-            {
-                window.Activate();
-                window.Focus();
-            }
-            finally
-            {
-                window.Topmost = false;
-            }
-        }
-
         private void ContextMenuButton_OnClick(object sender, RoutedEventArgs e)
         {
             var button = sender as Button;
@@ -213,11 +162,18 @@ namespace HidWizards.UCR.Views
             }
         }
 
-        private void ManageDevices_OnClick(object sender, RoutedEventArgs e)
+        private async void ShowSelectProfileDialog(Action<Guid> callback)
         {
-            var page = new HidWizards.UCR.Views.Devices.DevicesView { DataContext = new HidWizards.UCR.ViewModels.Devices.DevicesViewModel(Context) };
-            page.BackRequested += NavigationPage_OnBackRequested;
-            ShowNavigationPage(page);
+            var dialog = new HidWizards.UCR.Views.Dialogs.SelectProfileDialog(Context);
+            dialog.ViewModel.CloseDialogAction = result => DialogHost.CloseDialogCommand.Execute(result, dialog);
+            var result = await DialogHost.Show(dialog, "RootDialog");
+            if (result is Guid guid)
+            {
+                // Covers both "selected an existing profile" (no-op refresh) and "created a new one"
+                // (Dashboard.ProfileList would otherwise never learn about it — see ReloadProfileTree).
+                _mainWindowViewModel.ReloadProfileTree();
+                callback(guid);
+            }
         }
 
         private void Appearance_OnClick(object sender, RoutedEventArgs e)
@@ -252,15 +208,7 @@ namespace HidWizards.UCR.Views
         internal void PrepareForShutdown()
         {
             _autoProfileMonitor?.Dispose();
-            CloseAllProfileWindows(false);
             if (_trayIcon != null) _trayIcon.Visible = false;
-        }
-
-        private void CloseAllProfileWindows(bool showDashboard = true)
-        {
-            CloseNavigationPage(showDashboard);
-            var windows = new List<ProfileWindow>(ProfileWindows.Values);
-            foreach (var profileWindow in windows) profileWindow.Close();
         }
 
         protected override void OnClosed(EventArgs e)

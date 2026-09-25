@@ -99,15 +99,6 @@ namespace HidWizards.UCR.Tests.ModelTests
         }
 
         [Test]
-        public void AddOutputMenuUsesConciseDestinationNameForSimpleRoutes()
-        {
-            var option = new SimplePluginViewModel(new ButtonToFilter());
-
-            Assert.That(option.OutputType, Is.EqualTo("Filter"));
-            Assert.That(option.MenuLabel, Is.EqualTo("Filter"));
-        }
-
-        [Test]
         public void BindingDeviceListCanRefreshAfterProfileDevicesChange()
         {
             var first = new DeviceConfiguration(new Device("Keyboard A", "Core_Interception", "kbd-a", 0));

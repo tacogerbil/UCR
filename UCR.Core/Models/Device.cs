@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Linq;
 using System.Xml.Serialization;
 using HidWizards.IOWrapper.DataTransferObjects;
 using HidWizards.UCR.Core.Models.Binding;
@@ -401,17 +402,9 @@ namespace HidWizards.UCR.Core.Models
 
         private static List<DeviceBindingInfo> FlattenBindings(IEnumerable<DeviceBindingNode> nodes)
         {
-            var result = new List<DeviceBindingInfo>();
-            if (nodes == null) return result;
-
-            foreach (var node in nodes)
-            {
-                if (node == null) continue;
-                if (node.DeviceBindingInfo != null) result.Add(node.DeviceBindingInfo);
-                if (node.ChildrenNodes != null) result.AddRange(FlattenBindings(node.ChildrenNodes));
-            }
-
-            return result;
+            // Delegates to the shared tree-walker also used by OutputSlotResolver, rather than
+            // re-implementing the same recursion here.
+            return DeviceBindingNodeFlattener.Flatten(nodes).Select(f => f.Info).ToList();
         }
     }
 

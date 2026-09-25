@@ -124,6 +124,12 @@ jobs:
           $ErrorActionPreference = 'Stop'
           .\build\ProviderPatches\Apply-IOControllerDisposePattern.ps1 -IOWrapperRoot .\submodules\IOWrapper
 
+      - name: Remove Core ViGEm Costura weaving
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          .\build\ProviderPatches\Apply-CoreViGEmRemoveCostura.ps1 -IOWrapperRoot .\submodules\IOWrapper
+
       - name: Enable Core Interception blocking
         shell: pwsh
         run: |
@@ -202,13 +208,35 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
 
-          # Core_ViGEm is deliberately not overridden here. Its DS4 handler is patched
-          # from pinned source above and the provider is rebuilt by this workflow.
+          # Core_ViGEm's own Costura weaving is removed from pinned source above (it had no native
+          # payload of its own) and the provider is rebuilt by this workflow. Its dependency
+          # Nefarius.ViGEmClient.dll (a precompiled NuGet package, not built by this workflow) is a
+          # different story: Costura.AssemblyLoader.Attach() is the only thing its <Module> cctor
+          # does, and that method's Mutex.SetAccessControl(MutexSecurity) call does not resolve
+          # under .NET 8's BCL (MissingMethodException), crashing the provider before InitLibrary()
+          # ever runs. That cctor exists only to extract embedded native vigemclient.dll resources
+          # (costura64/32.vigemclient.dll) to a temp path at runtime. Both overrides below replace
+          # that with a static deploy: vigemclient.dll is the untouched 64-bit native resource
+          # extracted directly from the official Nefarius.ViGEmClient 1.15.16 package (byte-identical
+          # to its embedded copy, sits next to the managed DLL so normal DLL search-path resolution
+          # finds it without Costura), and Nefarius.ViGEmClient.dll is that same official package's
+          # assembly with its <Module> cctor body replaced by a bare `ret` (its only instruction was
+          # the now-redundant Attach() call) via Mono.Cecil -- no other IL was touched.
           $overrides = @(
             @{
               Source = '.\build\ProviderOverrides\Providers\Core_Interception\IOWrapper.Libraries.PollingDeviceHandler.dll'
               Destination = '.\submodules\IOWrapper\Artifacts\Providers\Core_Interception\IOWrapper.Libraries.PollingDeviceHandler.dll'
               Sha256 = 'dec7437219bb5b410955c0fc50d1a3f92af31cf08bc1c23ec7e5dcdfa4207b25'
+            },
+            @{
+              Source = '.\build\ProviderOverrides\Providers\Core_ViGEm\Nefarius.ViGEmClient.dll'
+              Destination = '.\submodules\IOWrapper\Artifacts\Providers\Core_ViGEm\Nefarius.ViGEmClient.dll'
+              Sha256 = 'c60742c0a069d48488eb4e544b1b7ec3fb99db7fe4a07467bebe326900963074'
+            },
+            @{
+              Source = '.\build\ProviderOverrides\Providers\Core_ViGEm\vigemclient.dll'
+              Destination = '.\submodules\IOWrapper\Artifacts\Providers\Core_ViGEm\vigemclient.dll'
+              Sha256 = '5e0ede288c2e9e753386f09400c592aa872bfdb7680faef6f780e9b1720ace7c'
             }
           )
 

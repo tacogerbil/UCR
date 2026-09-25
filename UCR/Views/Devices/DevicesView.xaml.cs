@@ -19,7 +19,7 @@ namespace HidWizards.UCR.Views.Devices
             if (e.NewValue is DevicesViewModel vm)
             {
                 vm.RequestGroupName = RequestGroupNameDialog;
-                DeviceGroupMemberViewModel.RequestRemovalOption = RequestRemovalOptionDialog;
+                vm.RequestRemovalOption = RequestRemovalOptionDialog;
             }
         }
 
@@ -51,11 +51,35 @@ namespace HidWizards.UCR.Views.Devices
             }
         }
 
-        public event EventHandler BackRequested;
-
-        private void Back_OnClick(object sender, System.Windows.RoutedEventArgs e)
+        private void AddToGroupButton_OnClick(object sender, System.Windows.RoutedEventArgs e)
         {
-            BackRequested?.Invoke(this, EventArgs.Empty);
+            var button = sender as Button;
+            if (button?.ContextMenu == null) return;
+
+            button.ContextMenu.PlacementTarget = button;
+            button.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Bottom;
+            button.ContextMenu.IsOpen = true;
+        }
+
+        // DeviceManagerPage (rename via alias, hide, remove from UCR/Windows, reorder) was fully built
+        // and correctly wired internally, but had no reachable entry point anywhere in the app -- see
+        // vault/ui-wiring-audit-2026-09-22.md. It's self-contained (only needs a DevicesManager, no
+        // dependency on the removed legacy ProfileWindow/ProfilePage), so it hosts cleanly in the same
+        // DialogHost.Show pattern every other dialog in this app already uses.
+        private async void ManageDevices_OnClick(object sender, System.Windows.RoutedEventArgs e)
+        {
+            if (!(DataContext is DevicesViewModel vm)) return;
+
+            var page = new DeviceManagerPage(vm.DevicesManager);
+            page.BackRequested += (s, args) => DialogHost.CloseDialogCommand.Execute(null, page);
+            try
+            {
+                await DialogHost.Show(page, "RootDialog");
+            }
+            finally
+            {
+                page.Dispose();
+            }
         }
     }
 }

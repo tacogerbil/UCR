@@ -6,6 +6,7 @@ vault/
 personal/
 .claude/
 .utility/
+GUI_/
 
 # Visual Studio
 .vs/

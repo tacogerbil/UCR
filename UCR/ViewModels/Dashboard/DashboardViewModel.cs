@@ -2,14 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Data;
+using System.Windows.Input;
 using HidWizards.UCR.Core;
 using HidWizards.UCR.Core.Annotations;
 using HidWizards.UCR.Core.Managers;
 using HidWizards.UCR.Core.Models;
 using HidWizards.UCR.Core.Models.Binding;
+using HidWizards.UCR.Utilities.Commands;
 
 namespace HidWizards.UCR.ViewModels.Dashboard
 {
@@ -56,6 +59,129 @@ namespace HidWizards.UCR.ViewModels.Dashboard
                 if (_selectedInputScope == value) return;
                 _selectedInputScope = value;
                 OnPropertyChanged();
+                CommandManager.InvalidateRequerySuggested();
+
+                // Once Mapping is already unlocked, a scope change (e.g. from the selector on the
+                // Mapping tab itself, not just the Devices tab) should immediately re-point at that
+                // scope's own profile — mirrors ExecuteBeginMapping's own resolution, see below.
+                if (IsMappingUnlocked) ApplyAssociatedProfileForCurrentScope();
+            }
+        }
+
+        // The Mapping tab stays hidden until the user has picked an Input Scope (a single device or
+        // a group) and explicitly asked to begin mapping. Once unlocked it stays unlocked for the
+        // rest of the session; the Devices tab remains reachable to go back and adjust things.
+        private bool _isMappingUnlocked;
+        public bool IsMappingUnlocked
+        {
+            get => _isMappingUnlocked;
+            private set
+            {
+                if (_isMappingUnlocked == value) return;
+                _isMappingUnlocked = value;
+                OnPropertyChanged();
+            }
+        }
+
+        public ICommand BeginMappingCommand { get; }
+
+        private bool CanBeginMapping(object parameter)
+        {
+            return SelectedInputScope != null
+                && Context.ScopeProfileAssociationService.GetAssociatedProfile(SelectedInputScope.Id) != null;
+        }
+
+        // Fired every time Begin Mapping is pressed, not just on the first IsMappingUnlocked
+        // transition -- IsMappingUnlocked's setter no-ops once already true, so relying on its
+        // PropertyChanged to drive tab navigation left the button permanently unable to bring the
+        // user back to the Mapping tab after they'd navigated away from it once.
+        public Action RequestShowMapping { get; set; }
+
+        private void ExecuteBeginMapping(object parameter)
+        {
+            ApplyAssociatedProfileForCurrentScope();
+            IsMappingUnlocked = true;
+            RequestShowMapping?.Invoke();
+        }
+
+        // The Devices tab (or the scope selector on the Mapping tab itself) is where a scope gets its
+        // Game Profile association — by the time this is called from ExecuteBeginMapping,
+        // CanBeginMapping has already confirmed one exists; called from the scope selector it's a
+        // best-effort re-point that's a no-op if the newly selected scope has no association yet.
+        // Whether the resolved profile itself has an Output Device configured is the Patch Bay's own
+        // concern (see MappingView's empty state), not a precondition for getting there.
+        private void ApplyAssociatedProfileForCurrentScope()
+        {
+            if (SelectedInputScope == null) return;
+
+            var profileGuid = Context.ScopeProfileAssociationService.GetAssociatedProfile(SelectedInputScope.Id);
+            if (profileGuid == null) return;
+
+            var profileItem = FindProfileItem(ProfileList, profileGuid.Value);
+            if (profileItem == null)
+            {
+                // ProfileList is only a display-friendly wrapper around Context.Profiles; anything
+                // that creates a Profile without going through this ViewModel (e.g. the Devices tab's
+                // SelectProfileDialog) can leave it stale. Self-heal here rather than depend on every
+                // future caller remembering to refresh it.
+                ReplaceProfileList(ProfileItem.GetProfileTree(Context.Profiles));
+                profileItem = FindProfileItem(ProfileList, profileGuid.Value);
+            }
+            if (profileItem == null) return;
+
+            SelectedProfileItem = profileItem;
+
+            // Selecting a device/group as the Mapping scope never actually added it to the profile's
+            // own InputDeviceConfigurations -- and that list is what BindingManager.BeginBindMode
+            // (Listen mode) and MappingRowViewModel.BuildManualPickerMenu (the manual picker) both
+            // iterate to decide which physical devices to listen to at all. Without this, Listen mode
+            // arms with zero devices subscribed and just waits forever no matter what gets pressed,
+            // and the manual picker renders empty, regardless of whether the profile itself is active.
+            EnsureScopeDevicesAreInProfileInputs(profileItem.Profile, SelectedInputScope);
+
+            // Without this, nothing about "Begin Mapping" actually starts routing real hardware
+            // input: Listen mode's EnterBindMode(), the Patch Bay's live value/pressed indicators,
+            // and the manual picker's device list (MappingRowViewModel.BuildManualPickerMenu) all
+            // depend on Context.ActiveProfile being set, which previously only happened via a
+            // separate, easy-to-miss toolbar "Activate profile" button nothing in this flow ever
+            // pointed the user at. Idempotent for an already-active profile (SubscriptionsManager.
+            // ActivateProfile early-returns true), so safe to call on every scope/profile change.
+            if (!Context.SubscriptionsManager.ActivateProfile(profileItem.Profile))
+            {
+                HidWizards.UCR.Utilities.DarkMessageBox.Show(
+                    "The Profile could not be activated, see the log for more details",
+                    "Profile failed to activate!", MessageBoxButton.OK, MessageBoxImage.Exclamation);
+            }
+        }
+
+        // Adds a DeviceConfiguration for each of the scope's member devices that isn't already in the
+        // profile's InputDeviceConfigurations. Deliberately additive/idempotent, never removes -- a
+        // device dropped from a group later is a separate concern, not something to silently unwire
+        // here. A member device that isn't currently connected/detected is skipped rather than failing
+        // the whole operation; it'll be picked up the next time this runs after it reconnects.
+        private void EnsureScopeDevicesAreInProfileInputs(Profile profile, InputScopeItem scope)
+        {
+            if (profile == null || scope == null || scope.MemberDeviceIds == null) return;
+
+            var existingKeys = new HashSet<string>(profile.InputDeviceConfigurations
+                .Select(configuration => DeviceIdentity.BuildLogicalKey(configuration.Device)));
+
+            var availableDevices = Context.DevicesManager.GetAvailableDeviceList(DeviceIoType.Input, false);
+            var toAdd = new List<DeviceConfiguration>();
+
+            foreach (var memberDeviceId in scope.MemberDeviceIds)
+            {
+                if (!existingKeys.Add(memberDeviceId)) continue;
+
+                var device = availableDevices.FirstOrDefault(d => DeviceIdentity.BuildLogicalKey(d) == memberDeviceId);
+                if (device == null) continue;
+
+                toAdd.Add(new DeviceConfiguration(device));
+            }
+
+            if (toAdd.Count > 0)
+            {
+                profile.AddDeviceConfigurations(toAdd, DeviceIoType.Input);
             }
         }
 
@@ -86,6 +212,7 @@ namespace HidWizards.UCR.ViewModels.Dashboard
         public DashboardViewModel(Context context)
         {
             Context = context;
+            BeginMappingCommand = new RelayCommand(ExecuteBeginMapping, CanBeginMapping);
             ProfileList = ProfileItem.GetProfileTree(context.Profiles);
             RebuildProfileView();
             PropertyChanged += OnPropertyChanged;

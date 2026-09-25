@@ -27,8 +27,24 @@ namespace HidWizards.UCR.Views.Controls
 
         private void Device_OnMouseDown(object sender, MouseButtonEventArgs e)
         {
+            // The row's CheckBox already toggles itself natively. Without this guard, clicking the
+            // CheckBox also fires this row-wide "click anywhere to toggle" convenience handler,
+            // toggling Checked a second time — net effect: checking a device never actually stuck,
+            // which is why AddDevicesDialog's ADD button never added anything.
+            if (e.OriginalSource is DependencyObject source && FindAncestorOrSelf<CheckBox>(source) != null) return;
+
             var device = (sender as Grid)?.DataContext as DeviceViewModel;
             device?.ToggleSelection();
+        }
+
+        private static T FindAncestorOrSelf<T>(DependencyObject obj) where T : DependencyObject
+        {
+            while (obj != null)
+            {
+                if (obj is T match) return match;
+                obj = VisualTreeHelper.GetParent(obj);
+            }
+            return null;
         }
 
         public void BringDeviceIntoView(DeviceViewModel device)

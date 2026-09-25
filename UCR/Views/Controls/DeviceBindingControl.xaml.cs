@@ -284,7 +284,7 @@ namespace HidWizards.UCR.Views.Controls
             return DeviceBinding.Profile.GetDeviceConfiguration(DeviceBinding.DeviceIoType, selectedItem.Value);
         }
 
-        private async void BindButton_OnClick(object sender, RoutedEventArgs e)
+        private void BindButton_OnClick(object sender, RoutedEventArgs e)
         {
             try
             {
@@ -296,17 +296,14 @@ namespace HidWizards.UCR.Views.Controls
                 }
                 else
                 {
-                    var mappingCard = FindAncestor<MappingCardControl>(this);
-                    var bindingViewModel = DataContext as DeviceBindingViewModel;
-                    if (mappingCard != null && bindingViewModel != null)
-                    {
-                        await mappingCard.OpenQuickOutputPickerAsync(bindingViewModel, BindButton);
-                    }
-                    else
-                    {
-                        // Legacy/non-card hosts retain the original picker rather than losing output binding.
-                        OpenContextMenu();
-                    }
+                    // The quick-output-picker path used to go through the legacy MappingCardControl
+                    // (removed 2026-09-22, see vault/ui-wiring-audit-2026-09-22.md -- it was only ever
+                    // reachable from the now-deleted ProfileWindow/ProfilePage). Every DeviceBindingControl
+                    // reachable from the live app today is Input-type anyway (PluginSummaryViewModel now
+                    // renders a plugin's *input* bindings here, not its fixed output binding), so this
+                    // branch is effectively unreached in practice -- kept as a safety net via the same
+                    // context-menu picker every Output binding already falls back to on right-click.
+                    OpenContextMenu();
                 }
             }
             catch (Exception exception)
@@ -335,18 +332,6 @@ namespace HidWizards.UCR.Views.Controls
             var contextMenu = BindButton.ContextMenu;
             contextMenu.PlacementTarget = BindButton;
             contextMenu.IsOpen = true;
-        }
-
-        private static T FindAncestor<T>(DependencyObject start) where T : DependencyObject
-        {
-            var current = VisualTreeHelper.GetParent(start);
-            while (current != null)
-            {
-                var match = current as T;
-                if (match != null) return match;
-                current = VisualTreeHelper.GetParent(current);
-            }
-            return null;
         }
     }
 }

@@ -38,6 +38,7 @@
         <ResourceDictionary>
             <converter:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
         <converter:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
+        <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
             <DataTemplate x:Key="DeviceBadgeTemplate">
                 <Border MinWidth="31" Height="22" Padding="5 1" CornerRadius="4"
                         Background="#1B1B1B" BorderBrush="{Binding OutlineBrush}" BorderThickness="1"
@@ -95,80 +96,24 @@
             </Border>
             <ToolBarTray Style="{DynamicResource MaterialDesignToolBarTray}" IsEnabled="{Binding Source={x:Reference RootDialog}, Path=IsOpen, Converter={StaticResource InverseBooleanConverter}}">
                 <ToolBar ToolBarTray.IsLocked="True" Style="{DynamicResource MaterialDesignToolBar}" ClipToBounds="False">
-                    <!-- VIEW SWITCH (Devices | Mapping) -->
+                    <!-- VIEW SWITCH (Devices | Mapping). Mapping stays hidden until the user has picked
+                         an Input Scope and pressed "Begin Mapping" (see DashboardViewModel.IsMappingUnlocked). -->
                     <StackPanel Orientation="Horizontal" Margin="0,0,16,0">
-                        <RadioButton x:Name="DevicesViewRadio" Content="Devices" Style="{StaticResource MaterialDesignTabRadioButton}" Margin="4,0" IsChecked="True"/>
-                        <RadioButton x:Name="MappingViewRadio" Content="Mapping" Style="{StaticResource MaterialDesignTabRadioButton}" Margin="4,0"/>
-                    </StackPanel>
-
-                    <!-- INPUT SCOPE DROPDOWN (Devices catalog) -->
-                    <ComboBox x:Name="InputScopeCombo" 
-                              materialDesign:HintAssist.Hint="INPUT SCOPE"
-                              Width="180" Margin="0,0,16,0"
-                              ItemsSource="{Binding Dashboard.InputSources}"
-                              SelectedItem="{Binding Dashboard.SelectedInputScope}"
-                              DisplayMemberPath="DisplayName" />
-
-                    <!-- GAME PROFILE CHIP -->
-                    <StackPanel Orientation="Horizontal" Margin="0,0,16,0">
-                        <Grid>
-                            <Rectangle Stroke="{DynamicResource PrimaryHueMidBrush}" StrokeThickness="1" StrokeDashArray="4,4"
-                                       RadiusX="3" RadiusY="3" IsHitTestVisible="False">
-                                <Rectangle.Style>
-                                    <Style TargetType="Rectangle">
-                                        <Setter Property="Visibility" Value="Collapsed"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Dashboard.SelectedProfileItem}" Value="{x:Null}">
-                                                <Setter Property="Visibility" Value="Visible"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Rectangle.Style>
-                            </Rectangle>
-
-                            <Button x:Name="GameProfileBtn" 
-                                    Command="{Binding GameProfileCommand}"
-                                    BorderBrush="{DynamicResource PrimaryHueMidBrush}" 
-                                    Foreground="{DynamicResource PrimaryHueMidBrush}"
-                                    ToolTip="Select or create a game profile">
-                                <Button.Style>
-                                    <Style TargetType="Button" BasedOn="{StaticResource MaterialDesignOutlinedButton}">
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding Dashboard.SelectedProfileItem}" Value="{x:Null}">
-                                                <Setter Property="BorderBrush" Value="Transparent"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </Button.Style>
-                                <Button.Content>
-                                    <TextBlock Text="{Binding Dashboard.SelectedProfileItem.ChipTitle, TargetNullValue='+ Select or create game profile', FallbackValue='+ Select or create game profile'}"/>
-                                </Button.Content>
-                            </Button>
-                        </Grid>
-                        <Button Command="{Binding EditProfileCommand}"
-                                ToolTip="Edit profile"
-                                Margin="4,0,0,0">
-                            <Button.Style>
-                                <Style TargetType="Button" BasedOn="{StaticResource MaterialDesignToolButton}">
-                                    <Setter Property="Visibility" Value="Visible" />
+                        <RadioButton x:Name="DevicesViewRadio" Content="Devices" Margin="4,0" IsChecked="True">
+                            <RadioButton.Style>
+                                <Style TargetType="RadioButton" BasedOn="{StaticResource MaterialDesignTabRadioButton}">
                                     <Style.Triggers>
-                                        <DataTrigger Binding="{Binding Dashboard.SelectedProfileItem}" Value="{x:Null}">
-                                            <Setter Property="Visibility" Value="Collapsed" />
+                                        <!-- Greyed out while Mapping is active, but still fully clickable to go back. -->
+                                        <DataTrigger Binding="{Binding ElementName=MappingViewRadio, Path=IsChecked}" Value="True">
+                                            <Setter Property="Opacity" Value="0.5"/>
                                         </DataTrigger>
                                     </Style.Triggers>
                                 </Style>
-                            </Button.Style>
-                            <materialDesign:PackIcon Kind="Pencil" />
-                        </Button>
+                            </RadioButton.Style>
+                        </RadioButton>
+                        <RadioButton x:Name="MappingViewRadio" Content="Mapping" Style="{StaticResource MaterialDesignTabRadioButton}" Margin="4,0"
+                                     Visibility="{Binding Dashboard.IsMappingUnlocked, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                     </StackPanel>
-
-                    <!-- OUTPUT DEVICE DROPDOWN -->
-                    <ComboBox x:Name="OutputDeviceCombo" 
-                              materialDesign:HintAssist.Hint="OUTPUT DEVICE"
-                              Width="180" Margin="0,0,16,0"
-                              ItemsSource="{Binding Dashboard.OutputDeviceControlViewModel.Devices}"
-                              SelectedItem="{Binding Dashboard.OutputDeviceControlViewModel.SelectedDeviceConfiguration}"
-                              DisplayMemberPath="Title" />
 
                     <Separator Margin="8,0" />
 
@@ -187,9 +132,6 @@
                     <Button ToolTip="Import / Export" Command="{Binding ImportExportCommand}" Margin="0,0,4,0">
                         <materialDesign:PackIcon Kind="FileExport"/>
                     </Button>
-                    <Button ToolTip="Manage devices" Click="ManageDevices_OnClick" Margin="0,0,4,0">
-                        <materialDesign:PackIcon Kind="Settings"/>
-                    </Button>
                     <Button x:Name="AppearanceButton" ToolTip="Appearance" Click="Appearance_OnClick" Padding="8 0" Margin="0,0,4,0">
                         <Grid Width="20" Height="20">
                             <Ellipse Width="16" Height="16" Fill="{DynamicResource PrimaryHueMidBrush}" Stroke="#D8D8D8" StrokeThickness="1"/>
@@ -201,6 +143,9 @@
                         <Button.ContextMenu>
                             <ContextMenu Style="{StaticResource MaterialDesignContextMenu}">
                                 <MenuItem Header="Open diagnostic logs" Click="OpenLogs_OnClick"/>
+                                <Separator/>
+                                <MenuItem Header="Help" Click="Help_OnClick"/>
+                                <MenuItem Header="About" Click="About_OnClick"/>
                             </ContextMenu>
                         </Button.ContextMenu>
                     </Button>
@@ -219,8 +164,23 @@
         </Grid>
         <materialDesign:DialogHost x:Name="RootDialog" Grid.Row="2" Identifier="RootDialog">
             <Grid x:Name="PatchBayHost">
-                <devices:DevicesView x:Name="DevicesViewElement" Visibility="{Binding ElementName=DevicesViewRadio, Path=IsChecked, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                <mapping:MappingView x:Name="MappingViewElement" Visibility="{Binding ElementName=MappingViewRadio, Path=IsChecked, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <devices:DevicesView x:Name="DevicesViewElement" Grid.Row="0" Visibility="{Binding ElementName=DevicesViewRadio, Path=IsChecked, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                <mapping:MappingView x:Name="MappingViewElement" Grid.Row="0" Visibility="{Binding ElementName=MappingViewRadio, Path=IsChecked, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+
+                <!-- Its own row, never overlapping DevicesView's own content — enabled once a device or
+                     group is selected on the Devices tab AND has a Game Profile associated with it
+                     (see DevicesViewModel.CurrentScope / ChooseProfileCommand). -->
+                <Button x:Name="BeginMappingButton" Content="Begin Mapping" Grid.Row="1"
+                        Style="{StaticResource MaterialDesignRaisedButton}"
+                        HorizontalAlignment="Right"
+                        Margin="0,16,24,16"
+                        Visibility="{Binding ElementName=DevicesViewRadio, Path=IsChecked, Converter={StaticResource BooleanToVisibilityConverter}}"
+                        Command="{Binding Dashboard.BeginMappingCommand}"/>
             </Grid>
         </materialDesign:DialogHost>
     </Grid>

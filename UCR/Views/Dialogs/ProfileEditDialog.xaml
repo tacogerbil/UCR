@@ -11,11 +11,21 @@
              mc:Ignorable="d" 
              d:DesignHeight="550" d:DesignWidth="450"
              d:DataContext="{d:DesignInstance Type=viewModels:ProfileEditDialogViewModel}">
+    <!-- The nested DialogHost below is a SIBLING of the main content Grid, not an ancestor — this
+         UserControl is itself shown via DialogHost.Show(..., "RootDialog") (MainWindowViewModel.
+         EditProfile), and the SAVE/CANCEL buttons' unqualified DialogHost.CloseDialogCommand resolves
+         to the nearest ANCESTOR DialogHost's CommandBinding; wrapping them in a second DialogHost here
+         would intercept that command instead of passing it through to "RootDialog". The Output Device
+         section's own dialogs (AddDevicesDialog / ManageDeviceConfigurationDialog) need a DIFFERENT
+         identifier than "RootDialog" regardless — a DialogHost can only have one dialog open per
+         identifier, and "RootDialog" is already showing this whole dialog. -->
+    <Grid>
     <Grid Margin="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
@@ -43,34 +53,76 @@
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
                 <ListBox ItemsSource="{Binding AutoActivateApplications}" SelectedItem="{Binding SelectedApplicationRule}"
-                         MinHeight="100" Margin="0 0 0 8">
+                         MinHeight="100" Margin="0 0 0 8" HorizontalContentAlignment="Stretch"
+                         Background="{DynamicResource MaterialDesignPaper}"
+                         Foreground="{DynamicResource MaterialDesignBody}"
+                         BorderBrush="{DynamicResource MaterialDesignDivider}">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Background" Value="Transparent" />
+                            <!-- Clicking into the row's TextBox doesn't select the ListBoxItem by
+                                 default (the TextBox eats the click), so Browse/Remove would never
+                                 enable without this. A Style.Trigger on IsKeyboardFocusWithin looked
+                                 right but isn't: triggers retract their setter the instant the
+                                 condition goes false, and clicking BROWSE/REMOVE itself moves focus
+                                 off the TextBox onto the button first, deselecting the row and
+                                 disabling the command at the exact moment the click is processed, so
+                                 the click was silently swallowed. An EventSetter makes the selection a
+                                 real one-time assignment that survives the focus move. -->
+                            <EventSetter Event="GotKeyboardFocus" Handler="ApplicationRuleItem_OnGotKeyboardFocus" />
+                        </Style>
+                    </ListBox.ItemContainerStyle>
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <TextBox Text="{Binding Executable, UpdateSourceTrigger=PropertyChanged}" Width="350"/>
+                            <TextBox Text="{Binding Executable, UpdateSourceTrigger=PropertyChanged}" HorizontalAlignment="Stretch"
+                                     Background="Transparent" Foreground="{DynamicResource MaterialDesignBody}"
+                                     BorderThickness="0" />
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
                 <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Style="{StaticResource MaterialDesignOutlinedButton}" Content="ADD" Command="{Binding AddApplicationRuleCommand}" Margin="0 0 8 0" />
-                    <Button Style="{StaticResource MaterialDesignOutlinedButton}" Content="BROWSE" Command="{Binding BrowseApplicationRuleCommand}" Margin="0 0 8 0" />
-                    <Button Style="{StaticResource MaterialDesignOutlinedButton}" Content="REMOVE" Command="{Binding RemoveApplicationRuleCommand}" />
+                    <Button Style="{StaticResource MaterialDesignRaisedButton}" Content="ADD" Command="{Binding AddApplicationRuleCommand}" Margin="0 0 8 0" />
+                    <Button Style="{StaticResource MaterialDesignRaisedButton}" Content="BROWSE" Command="{Binding BrowseApplicationRuleCommand}" Margin="0 0 8 0" />
+                    <Button Style="{StaticResource MaterialDesignRaisedButton}" Content="REMOVE" Command="{Binding RemoveApplicationRuleCommand}" />
+                </StackPanel>
+            </Grid>
+        </GroupBox>
+
+        <!-- Output Device. The only reachable "add an output device to this profile" path in the app
+             right now — see ProfileEditDialogViewModel.OutputDeviceControlViewModel for why. -->
+        <GroupBox Header="Output Device" Grid.Row="3" Style="{DynamicResource MaterialDesignCardGroupBox}" Margin="0 0 0 16">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <ListBox Grid.Row="0" ItemsSource="{Binding OutputDeviceControlViewModel.Devices}"
+                         SelectedItem="{Binding OutputDeviceControlViewModel.SelectedDeviceConfiguration}"
+                         DisplayMemberPath="Title" MinHeight="60" MaxHeight="120" Margin="0 0 0 8"
+                         Background="{DynamicResource MaterialDesignPaper}"
+                         Foreground="{DynamicResource MaterialDesignBody}"
+                         BorderBrush="{DynamicResource MaterialDesignDivider}" />
+                <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Style="{StaticResource MaterialDesignRaisedButton}" Content="ADD" Command="{Binding AddOutputDeviceCommand}" Margin="0 0 8 0" />
+                    <Button Style="{StaticResource MaterialDesignRaisedButton}" Content="CONFIGURE" Command="{Binding ConfigureOutputDeviceCommand}" Margin="0 0 8 0" />
+                    <Button Style="{StaticResource MaterialDesignRaisedButton}" Content="REMOVE" Command="{Binding RemoveOutputDeviceCommand}" />
                 </StackPanel>
             </Grid>
         </GroupBox>
 
         <!-- Actions -->
-        <GroupBox Header="Actions" Grid.Row="3" Style="{DynamicResource MaterialDesignCardGroupBox}" Margin="0 0 0 16">
+        <GroupBox Header="Actions" Grid.Row="4" Style="{DynamicResource MaterialDesignCardGroupBox}" Margin="0 0 0 16">
             <WrapPanel Orientation="Horizontal" Margin="0 8 0 0">
-                <Button Style="{StaticResource MaterialDesignOutlinedButton}" Content="CLONE" Command="{Binding CloneCommand}" Margin="0 0 8 8" />
-                <Button Style="{StaticResource MaterialDesignOutlinedButton}" Content="ADD CHILD" Command="{Binding AddChildCommand}" Margin="0 0 8 8" />
-                <Button Style="{StaticResource MaterialDesignOutlinedButton}" Content="IMPORT CHILD" Command="{Binding ImportChildCommand}" Margin="0 0 8 8" />
-                <Button Style="{StaticResource MaterialDesignOutlinedButton}" Content="EXPORT" Command="{Binding ExportCommand}" Margin="0 0 8 8" />
-                <Button Style="{StaticResource MaterialDesignOutlinedButton}" Content="REMOVE" Command="{Binding RemoveCommand}" Foreground="{DynamicResource ErrorBrush}" BorderBrush="{DynamicResource ErrorBrush}" Margin="0 0 8 8" />
+                <Button Style="{StaticResource MaterialDesignRaisedButton}" Content="CLONE" Command="{Binding CloneCommand}" Margin="0 0 8 8" />
+                <Button Style="{StaticResource MaterialDesignRaisedButton}" Content="ADD CHILD" Command="{Binding AddChildCommand}" Margin="0 0 8 8" />
+                <Button Style="{StaticResource MaterialDesignRaisedButton}" Content="IMPORT CHILD" Command="{Binding ImportChildCommand}" Margin="0 0 8 8" />
+                <Button Style="{StaticResource MaterialDesignRaisedButton}" Content="EXPORT" Command="{Binding ExportCommand}" Margin="0 0 8 8" />
+                <Button Style="{StaticResource MaterialDesignRaisedButton}" Content="REMOVE" Command="{Binding RemoveCommand}" Foreground="{DynamicResource ErrorBrush}" BorderBrush="{DynamicResource ErrorBrush}" Margin="0 0 8 8" />
             </WrapPanel>
         </GroupBox>
 
         <!-- Dialog Controls -->
-        <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Grid.Row="4" Margin="0 16 0 0">
+        <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Grid.Row="5" Margin="0 16 0 0">
             <Button IsDefault="True" 
                     Command="{x:Static wpf:DialogHost.CloseDialogCommand}" 
                     Content="SAVE">
@@ -78,7 +130,7 @@
                     <system:String>Save</system:String>
                 </Button.CommandParameter>
                 <Button.Style>
-                    <Style TargetType="{x:Type Button}" BasedOn="{StaticResource MaterialDesignFlatButton}">
+                    <Style TargetType="{x:Type Button}" BasedOn="{StaticResource MaterialDesignRaisedButton}">
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding Source={x:Reference TextValue}, Path=Text}" Value="">
                                 <Setter Property="IsEnabled" Value="False" />
@@ -87,7 +139,7 @@
                     </Style>
                 </Button.Style>
             </Button>
-            <Button IsCancel="True" Margin="8 0 0 0" Style="{DynamicResource MaterialDesignFlatButton}"
+            <Button IsCancel="True" Margin="8 0 0 0" Style="{StaticResource MaterialDesignRaisedButton}"
                     Command="{x:Static wpf:DialogHost.CloseDialogCommand}"
                     Content="CANCEL">
                 <Button.CommandParameter>
@@ -95,5 +147,7 @@
                 </Button.CommandParameter>
             </Button>
         </StackPanel>
+    </Grid>
+    <wpf:DialogHost Identifier="ProfileEditNestedDialogHost" />
     </Grid>
 </UserControl>

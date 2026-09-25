@@ -6,11 +6,22 @@ using System.Runtime.CompilerServices;
 using System.Windows.Input;
 using HidWizards.UCR.Core.Models;
 using HidWizards.UCR.Utilities.Commands;
+using HidWizards.UCR.ViewModels.Dashboard;
 using Microsoft.Win32;
 
 namespace HidWizards.UCR.ViewModels.Dialogs
 {
-    public class ProfileEditDialogViewModel : INotifyPropertyChanged
+    public enum ProfileEditResult
+    {
+        Clone,
+        Remove,
+        AddChild,
+        ImportChild,
+        Export,
+        Save
+    }
+
+    public class ProfileEditDialogViewModel : INotifyPropertyChanged, IDisposable
     {
         private readonly Profile _profile;
         private string _profileName;
@@ -30,7 +41,19 @@ namespace HidWizards.UCR.ViewModels.Dialogs
         }
 
         public ObservableCollection<ProfileApplicationRule> AutoActivateApplications { get; }
-        public ProfileApplicationRule SelectedApplicationRule { get; set; }
+
+        private ProfileApplicationRule _selectedApplicationRule;
+        public ProfileApplicationRule SelectedApplicationRule
+        {
+            get => _selectedApplicationRule;
+            set
+            {
+                if (_selectedApplicationRule == value) return;
+                _selectedApplicationRule = value;
+                OnPropertyChanged();
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
 
         private bool _isDirty;
         public bool IsDirty
@@ -55,23 +78,56 @@ namespace HidWizards.UCR.ViewModels.Dialogs
         public ICommand RemoveApplicationRuleCommand { get; }
         public ICommand BrowseApplicationRuleCommand { get; }
 
-        public Action<string> CloseDialogAction { get; set; }
+        // Only reachable "add an Output Device to a profile" path in the app right now — the old
+        // full ProfilePage/ProfileWindow editor that used to do this relies on a navigation-hosting
+        // mechanism (MainWindow.xaml.cs's ShowNavigationPage) that turned out to be dead stub code
+        // left over from an earlier refactor, and the toolbar's old Output Device dropdown only ever
+        // let you pick among already-added devices, never add one. Reuses the same
+        // ProfileDeviceListControlViewModel the (unreachable) old editor used, and the same
+        // AddDevicesDialog/ManageDeviceConfigurationDialog it already opens via DialogHost.Show —
+        // no new device-management logic, just a working place to reach it from.
+        public ProfileDeviceListControlViewModel OutputDeviceControlViewModel { get; }
+        public ICommand AddOutputDeviceCommand { get; }
+        public ICommand RemoveOutputDeviceCommand { get; }
+        public ICommand ConfigureOutputDeviceCommand { get; }
+
+        public Action<ProfileEditResult> CloseDialogAction { get; set; }
 
         public ProfileEditDialogViewModel(Profile profile)
         {
             _profile = profile;
             _profileName = profile.Title;
             AutoActivateApplications = new ObservableCollection<ProfileApplicationRule>(profile.AutoActivateApplications);
+            // "ProfileEditNestedDialogHost" (not the default "RootDialog"): this whole dialog is
+            // itself shown on "RootDialog", which can only have one dialog open at a time — see
+            // ProfileEditDialog.xaml's nested DialogHost for why it has to be a sibling, not this
+            // control's ancestor.
+            OutputDeviceControlViewModel = new ProfileDeviceListControlViewModel(
+                profile, profile.OutputDeviceConfigurations, DeviceIoType.Output, () => IsDirty = true,
+                "ProfileEditNestedDialogHost");
 
             CloneCommand = new RelayCommand(ExecuteClone);
             RemoveCommand = new RelayCommand(ExecuteRemove);
             AddChildCommand = new RelayCommand(ExecuteAddChild);
             ImportChildCommand = new RelayCommand(ExecuteImportChild);
             ExportCommand = new RelayCommand(ExecuteExport);
-            
+
             AddApplicationRuleCommand = new RelayCommand(ExecuteAddApplicationRule);
             RemoveApplicationRuleCommand = new RelayCommand(ExecuteRemoveApplicationRule, _ => SelectedApplicationRule != null);
             BrowseApplicationRuleCommand = new RelayCommand(ExecuteBrowseApplicationRule, _ => SelectedApplicationRule != null);
+
+            AddOutputDeviceCommand = new RelayCommand(_ => OutputDeviceControlViewModel.AddDevices());
+            RemoveOutputDeviceCommand = new RelayCommand(
+                _ => OutputDeviceControlViewModel.RemoveDevice(OutputDeviceControlViewModel.SelectedDeviceConfiguration),
+                _ => OutputDeviceControlViewModel.IsRemoveEnabled);
+            ConfigureOutputDeviceCommand = new RelayCommand(
+                _ => OutputDeviceControlViewModel.ManageDeviceConfiguration(),
+                _ => OutputDeviceControlViewModel.IsConfigurationEnabled);
+        }
+
+        public void Dispose()
+        {
+            OutputDeviceControlViewModel.Dispose();
         }
 
         public void SaveToProfile()
@@ -91,27 +147,27 @@ namespace HidWizards.UCR.ViewModels.Dialogs
 
         private void ExecuteClone(object parameter)
         {
-            CloseDialogAction?.Invoke("Clone");
+            CloseDialogAction?.Invoke(ProfileEditResult.Clone);
         }
 
         private void ExecuteRemove(object parameter)
         {
-            CloseDialogAction?.Invoke("Remove");
+            CloseDialogAction?.Invoke(ProfileEditResult.Remove);
         }
 
         private void ExecuteAddChild(object parameter)
         {
-            CloseDialogAction?.Invoke("AddChild");
+            CloseDialogAction?.Invoke(ProfileEditResult.AddChild);
         }
 
         private void ExecuteImportChild(object parameter)
         {
-            CloseDialogAction?.Invoke("ImportChild");
+            CloseDialogAction?.Invoke(ProfileEditResult.ImportChild);
         }
 
         private void ExecuteExport(object parameter)
         {
-            CloseDialogAction?.Invoke("Export");
+            CloseDialogAction?.Invoke(ProfileEditResult.Export);
         }
 
         private void ExecuteAddApplicationRule(object parameter)

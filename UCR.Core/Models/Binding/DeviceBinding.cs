@@ -178,6 +178,7 @@ namespace HidWizards.UCR.Core.Models.Binding
             KeySubValue = subValue;
             IsBound = true;
             Profile.Context.ContextChanged();
+            Profile.Context.SubscriptionsManager.RefreshSubscriptionsIfActive(Profile);
         }
         
         public string BoundName()
@@ -278,6 +279,7 @@ namespace HidWizards.UCR.Core.Models.Binding
             InvertInput = false;
             IsBound = false;
             Profile.Context.ContextChanged();
+            Profile.Context.SubscriptionsManager.RefreshSubscriptionsIfActive(Profile);
         }
 
         private void OnEndBindModeHandler(DeviceBinding deviceBinding)

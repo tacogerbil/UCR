@@ -80,7 +80,7 @@ namespace HidWizards.UCR.Core.Models.Subscription
             {
                 foreach (var subscription in MappingSubscriptions)
                 {
-                    if (profileMappingSubscription.Mapping.Title.Equals(subscription.Mapping.Title))
+                    if (profileMappingSubscription.Mapping.OverrideIdentity.Equals(subscription.Mapping.OverrideIdentity))
                     {
                         subscription.Overriden = true;
                     }

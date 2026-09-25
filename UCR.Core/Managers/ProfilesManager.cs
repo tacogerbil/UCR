@@ -34,6 +34,22 @@ namespace HidWizards.UCR.Core.Managers
             return Profile.CreateProfile(_context, title, inputDevices, outputDevices);
         }
 
+        public Profile FindProfileByGuid(Guid guid)
+        {
+            return FindProfileByGuid(_profiles, guid);
+        }
+
+        private static Profile FindProfileByGuid(IEnumerable<Profile> profiles, Guid guid)
+        {
+            foreach (var profile in profiles)
+            {
+                if (profile.Guid == guid) return profile;
+                var child = FindProfileByGuid(profile.ChildProfiles, guid);
+                if (child != null) return child;
+            }
+            return null;
+        }
+
         public bool AddProfile(Profile newProfile, Profile parentProfile = null)
         {
             if (parentProfile != null)

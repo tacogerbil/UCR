@@ -1,11 +1,9 @@
 using System;
-using System.Linq;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Threading;
 using HidWizards.UCR.Utilities;
 using Forms = System.Windows.Forms;
-using ProfileWindow = HidWizards.UCR.Views.ProfileViews.ProfileWindow;
 
 namespace HidWizards.UCR.Views
 {
@@ -41,15 +39,6 @@ namespace HidWizards.UCR.Views
 
         private void HideToTray()
         {
-            _profileWindowsHiddenToTray.Clear();
-            foreach (var profileWindow in ProfileWindows.Values)
-            {
-                if (!profileWindow.IsVisible) continue;
-
-                _profileWindowsHiddenToTray.Add(profileWindow.ProfileGuid);
-                profileWindow.Hide();
-            }
-
             _trayIcon.Visible = true;
             Hide();
         }
@@ -58,29 +47,7 @@ namespace HidWizards.UCR.Views
         {
             Show();
             if (WindowState == WindowState.Minimized) WindowState = WindowState.Normal;
-
-            ProfileWindow restoredProfile = null;
-            foreach (var profileGuid in _profileWindowsHiddenToTray)
-            {
-                if (ProfileWindows.TryGetValue(profileGuid, out var profileWindow))
-                {
-                    profileWindow.Show();
-                    restoredProfile = profileWindow;
-                }
-            }
-            _profileWindowsHiddenToTray.Clear();
-
-            if (restoredProfile != null)
-            {
-                SurfaceProfileWindow(restoredProfile);
-            }
-            else
-            {
-                var visibleProfile = ProfileWindows.Values.FirstOrDefault(window => window.IsVisible);
-                if (visibleProfile != null) SurfaceProfileWindow(visibleProfile);
-                else BringToForeground();
-            }
-
+            BringToForeground();
             _trayIcon.Visible = true;
         }
 

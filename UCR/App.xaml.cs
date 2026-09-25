@@ -41,6 +41,7 @@ namespace HidWizards.UCR
         {
             base.OnStartup(e);
             RuntimePathManager.NormalizeWorkingDirectory();
+            SiblingAssemblyResolver.Register("Providers", "Plugins");
             Logger.InitializeSession();
             AppearanceManager.ApplySavedAccent();
             AppearanceManager.ApplySavedUiScale();

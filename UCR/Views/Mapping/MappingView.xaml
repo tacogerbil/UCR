@@ -17,17 +17,107 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <Border BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="0,0,0,1" Padding="8">
             <StackPanel Orientation="Horizontal">
                 <TextBlock Text="Mapping Patch Bay" VerticalAlignment="Center" Margin="8,0" FontWeight="Bold" FontSize="16"/>
+                <!-- Read-only: you map one device/group at a time, committed when you pressed Begin
+                     Mapping. To map something else, go back to Devices and select/Begin Mapping again
+                     — not a switcher listing every device and group in the system. -->
+                <TextBlock Text="Mapping:" VerticalAlignment="Center" Margin="24,0,8,0" Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+                <TextBlock Text="{Binding Dashboard.SelectedInputScope.DisplayName}" VerticalAlignment="Center" FontWeight="SemiBold"/>
             </StackPanel>
         </Border>
 
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+        <!-- Filters / Modifier Buttons: "Button/Axis to Filter" mappings don't target an output slot
+             (they only set a named filter's state), so they can't be one of the Patch Bay rows below;
+             this is a separate section for exactly that reason. Other rows condition on these filters
+             via their own Advanced panel's "Filters:" section (PluginSummaryViewModel.FilterTags). -->
+        <Expander Grid.Row="1" Header="Filters / Modifier Buttons" IsExpanded="False"
+                  BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="0,0,0,1">
+            <StackPanel Margin="8">
+                <ItemsControl ItemsSource="{Binding FilterProducers}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="0,0,0,1" Padding="8,4" Margin="0,0,0,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="{Binding PluginSummary.Plugin.PluginName}" FontWeight="Bold" Opacity="0.8" Margin="0,0,0,4"/>
+                                        <ItemsControl ItemsSource="{Binding PluginSummary.DeviceBindings}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <controls:DeviceBindingControl DataContext="{Binding}" DeviceBinding="{Binding DeviceBinding}" Label="{Binding DeviceBindingName}" Category="{Binding DeviceBindingCategory}"/>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <ItemsControl ItemsSource="{Binding PluginSummary.PluginPropertyGroups}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid Margin="0,8,0,0">
+                                                        <Grid.RowDefinitions>
+                                                            <RowDefinition Height="Auto"/>
+                                                            <RowDefinition Height="Auto"/>
+                                                        </Grid.RowDefinitions>
+                                                        <TextBlock Grid.Row="0" Text="{Binding GroupName}" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                                                        <pluginControls:PluginPropertyListControl Grid.Row="1" DataContext="{Binding}"/>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Style="{StaticResource MaterialDesignToolButton}" Command="{Binding RemoveCommand}"
+                                            Content="✕" Width="32" Height="32" Foreground="Red" ToolTip="Remove this filter mapping" VerticalAlignment="Top"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Margin="0,0,0,8" Foreground="{DynamicResource MaterialDesignBodyLight}" FontStyle="Italic" TextWrapping="Wrap"
+                           Text="No filter mappings yet. Add one to gate other rows on a button or axis being held -- e.g. a modifier-key layer.">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding FilterProducers.Count}" Value="0">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="+ BUTTON FILTER" Command="{Binding AddButtonFilterCommand}" Style="{StaticResource MaterialDesignRaisedButton}" Margin="0,0,8,0"/>
+                    <Button Content="+ AXIS FILTER" Command="{Binding AddAxisFilterCommand}" Style="{StaticResource MaterialDesignRaisedButton}"/>
+                </StackPanel>
+            </StackPanel>
+        </Expander>
+
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
             <ItemsControl ItemsSource="{Binding Rows}">
+                <ItemsControl.Style>
+                    <Style TargetType="ItemsControl">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Rows.Count}" Value="0">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate>
+                                            <TextBlock Text="Select an Output Device for this profile to begin mapping."
+                                                       Margin="12" Foreground="{DynamicResource MaterialDesignBodyLight}"
+                                                       FontStyle="Italic" TextWrapping="Wrap" />
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ItemsControl.Style>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
                         <Border BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="0,0,0,1" Padding="12,8">
@@ -74,11 +164,23 @@
                                     </Grid.ColumnDefinitions>
 
                                     <!-- Listen Button -->
-                                    <Button Grid.Column="0" 
+                                    <Button Grid.Column="0"
                                             HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
-                                            Command="{Binding ListenCommand}">
+                                            Command="{Binding ListenCommand}"
+                                            ToolTip="Click, then move an axis or press a button on your device to bind it to this output">
+                                        <Button.ContentTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
+                                                    <Border Background="{DynamicResource PrimaryHueMidBrush}" CornerRadius="10" Margin="6,0,0,0" Padding="6,0"
+                                                            Visibility="{Binding DataContext.IsMerged, RelativeSource={RelativeSource AncestorType=Button}, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                                        <TextBlock Text="+1" Foreground="{DynamicResource PrimaryHueMidForegroundBrush}" FontWeight="Bold" FontSize="10" VerticalAlignment="Center"/>
+                                                    </Border>
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </Button.ContentTemplate>
                                         <Button.Style>
-                                            <Style TargetType="Button" BasedOn="{StaticResource MaterialDesignOutlinedButton}">
+                                            <Style TargetType="Button" BasedOn="{StaticResource MaterialDesignRaisedButton}">
                                                 <Setter Property="Content" Value="Unassigned (move axis or press button to bind)" />
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding IsListening}" Value="True">
@@ -95,8 +197,10 @@
                                     </Button>
 
                                     <!-- Chevron Manual Picker -->
-                                    <Menu Grid.Column="1" Background="Transparent" Padding="0" Margin="4,0,0,0">
-                                        <MenuItem Header="▾" Width="32" Height="32" FontSize="16" ItemsSource="{Binding ManualPickerMenu}">
+                                    <Menu Grid.Column="1" Padding="0" Margin="4,0,0,0" ToolTip="Pick input manually instead of pressing it">
+                                        <MenuItem Header="▾" Width="32" Height="32" FontSize="16" ItemsSource="{Binding ManualPickerMenu}"
+                                                  Background="{DynamicResource MaterialDesignToolBarBackground}"
+                                                  BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="1">
                                             <MenuItem.ItemContainerStyle>
                                                 <Style TargetType="{x:Type MenuItem}">
                                                     <Setter Property="Header" Value="{Binding Name}" />
@@ -115,8 +219,8 @@
                                             Content="✕" Width="32" Height="32" Margin="4,0,0,0" Foreground="Red" ToolTip="Clear binding"/>
                                 </Grid>
 
-                                <!-- Live Indicator Placeholder -->
-                                <ProgressBar Grid.Row="0" Grid.Column="3" Value="50" Height="8" VerticalAlignment="Center" Margin="0,0,12,0"
+                                <!-- Live Indicator -->
+                                <ProgressBar Grid.Row="0" Grid.Column="3" Value="{Binding InputValue, Mode=OneWay}" Height="8" VerticalAlignment="Center" Margin="0,0,12,0"
                                              Visibility="{Binding IsAxis, Converter={StaticResource BooleanToVisibilityConverter}}"/>
 
                                 <Border Grid.Row="0" Grid.Column="3" Width="20" Height="20" CornerRadius="10" 
@@ -124,9 +228,13 @@
                                     <Border.Style>
                                         <Style TargetType="Border">
                                             <Setter Property="Visibility" Value="Collapsed"/>
+                                            <Setter Property="Background" Value="Transparent"/>
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding IsAxis}" Value="False">
                                                     <Setter Property="Visibility" Value="Visible"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding IsPressed}" Value="True">
+                                                    <Setter Property="Background" Value="{DynamicResource PrimaryHueMidBrush}"/>
                                                 </DataTrigger>
                                             </Style.Triggers>
                                         </Style>
@@ -137,7 +245,8 @@
                                 <TextBlock Grid.Row="0" Grid.Column="4" Text="—" VerticalAlignment="Center" Margin="0,0,12,0" Opacity="0.6"/>
 
                                 <!-- Advanced Toggle -->
-                                <ToggleButton Grid.Row="0" Grid.Column="5" Style="{StaticResource MaterialDesignToolButton}" IsChecked="{Binding IsAdvancedExpanded}" Content="⋯" />
+                                <ToggleButton Grid.Row="0" Grid.Column="5" Style="{StaticResource MaterialDesignToolButton}" IsChecked="{Binding IsAdvancedExpanded}" Content="⋯"
+                                              ToolTip="Advanced: view or edit merged inputs and plugin properties for this output" />
                                 
                                 <!-- Advanced Panel -->
                                 <Border Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="6" 
@@ -152,10 +261,11 @@
                                                         <RowDefinition Height="Auto"/>
                                                         <RowDefinition Height="Auto"/>
                                                         <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
                                                     </Grid.RowDefinitions>
-                                                    
+
                                                     <TextBlock Grid.Row="0" Text="{Binding Plugin.PluginName}" FontWeight="Bold" Margin="0,0,0,8" Opacity="0.8"/>
-                                                    
+
                                                     <!-- Output Nodes -->
                                                     <ItemsControl Grid.Row="1" ItemsSource="{Binding DeviceBindings}">
                                                         <ItemsControl.ItemTemplate>
@@ -164,7 +274,7 @@
                                                             </DataTemplate>
                                                         </ItemsControl.ItemTemplate>
                                                     </ItemsControl>
-                                                    
+
                                                     <!-- Plugin Properties -->
                                                     <ItemsControl Grid.Row="2" ItemsSource="{Binding PluginPropertyGroups}">
                                                         <ItemsControl.ItemTemplate>
@@ -180,6 +290,33 @@
                                                             </DataTemplate>
                                                         </ItemsControl.ItemTemplate>
                                                     </ItemsControl>
+
+                                                    <!-- Filters: only run this plugin when a named filter (set by a Button/Axis
+                                                         to Filter mapping elsewhere in the profile) is in a given state. -->
+                                                    <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,8,0,0" VerticalAlignment="Center">
+                                                        <TextBlock Text="Filters:" VerticalAlignment="Center" Margin="0,0,8,0" Opacity="0.8" FontWeight="SemiBold"/>
+                                                        <ItemsControl ItemsSource="{Binding FilterTags}">
+                                                            <ItemsControl.ItemsPanel>
+                                                                <ItemsPanelTemplate>
+                                                                    <WrapPanel/>
+                                                                </ItemsPanelTemplate>
+                                                            </ItemsControl.ItemsPanel>
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <StackPanel Orientation="Horizontal" Margin="0,0,8,4">
+                                                                        <ToggleButton IsChecked="{Binding Negative}" Content="NOT"
+                                                                                      Style="{StaticResource MaterialDesignToolButton}"
+                                                                                      ToolTip="Invert: only active while this filter is OFF"
+                                                                                      Padding="4,0" Margin="0,0,2,0"/>
+                                                                        <materialDesign:Chip Content="{Binding Name}" DeleteCommand="{Binding RemoveCommand}"/>
+                                                                    </StackPanel>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                        <Button Content="+ ADD FILTER" Command="{Binding AddFilterCommand}"
+                                                                Style="{StaticResource MaterialDesignRaisedButton}" Padding="8,0" Margin="8,0,0,0"
+                                                                ToolTip="Only run this plugin when a named filter is in a given state"/>
+                                                    </StackPanel>
                                                 </Grid>
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>

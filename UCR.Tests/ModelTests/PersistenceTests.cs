@@ -509,6 +509,41 @@ namespace HidWizards.UCR.Tests.ModelTests
             Assert.Throws<InvalidDataException>(() => Reload(pluginTypes));
         }
 
+        [Test]
+        public void DeviceGroupsAndScopeProfileAssociationsRoundTripAcrossReload()
+        {
+            var context = NewContext();
+            var group = context.DeviceGroupService.CreateGroup("Racing Rig", new List<string> { "device-1", "device-2" });
+            var profileGuid = Guid.NewGuid();
+            context.ScopeProfileAssociationService.SetAssociatedProfile(group.Guid.ToString(), profileGuid);
+            context.ScopeProfileAssociationService.SetAssociatedProfile("device-3", Guid.NewGuid());
+            context.SaveContext(null);
+
+            Assert.That(File.Exists(_store.GroupsPath), Is.True);
+
+            var reloaded = Reload();
+
+            Assert.That(reloaded.DeviceGroups, Has.Count.EqualTo(1));
+            Assert.That(reloaded.DeviceGroups[0].Title, Is.EqualTo("Racing Rig"));
+            Assert.That(reloaded.DeviceGroups[0].MemberDeviceIdentities, Is.EquivalentTo(new[] { "device-1", "device-2" }));
+            Assert.That(reloaded.ScopeProfileAssociations[group.Guid.ToString()], Is.EqualTo(profileGuid));
+            Assert.That(reloaded.ScopeProfileAssociations, Has.Count.EqualTo(2));
+        }
+
+        [Test]
+        public void MissingGroupsFileOnReload_IsTreatedAsNoGroupsRatherThanCorruption()
+        {
+            var context = NewContext();
+            context.SaveContext(null);
+            Assert.That(File.Exists(_store.GroupsPath), Is.True);
+            File.Delete(_store.GroupsPath);
+
+            var reloaded = Reload();
+
+            Assert.That(reloaded.DeviceGroups, Is.Not.Null.And.Empty);
+            Assert.That(reloaded.ScopeProfileAssociations, Is.Not.Null.And.Empty);
+        }
+
         private void WriteLegacyContext(string title, List<Type> pluginTypes)
         {
             var legacy = new LegacyContextImportPackage();

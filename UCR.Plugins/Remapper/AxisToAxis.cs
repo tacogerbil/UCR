@@ -15,6 +15,17 @@ namespace HidWizards.UCR.Plugins.Remapper
     [PluginSettingsGroup("Dead zone", Group = "Dead zone")]
     public class AxisToAxis : Plugin
     {
+        // Some pedal sets (and old DOS-era conventions) report throttle and brake as a single combined
+        // axis rather than two independent ones -- pressing one pedal moves it positive, the other
+        // negative, centered at 0 when both are released. Splitting that one physical axis across two
+        // Patch Bay rows (one per pedal) can't be done by wiring a single plugin's outputs to two rows
+        // -- each row owns its own independent plugin instance -- so instead each row's own instance of
+        // this plugin picks which half it cares about. Mirrors x360ce's per-axis "half axis" option.
+        public enum HalfAxisMode { Off, PositiveHalf, NegativeHalf }
+
+        [PluginGui("Half axis", Order = 2)]
+        public HalfAxisMode HalfAxis { get; set; }
+
         [PluginGui("Invert")]
         public bool Invert { get; set; }
 
@@ -49,6 +60,7 @@ namespace HidWizards.UCR.Plugins.Remapper
         public override void Update(params short[] values)
         {
             var value = values[0];
+            if (HalfAxis != HalfAxisMode.Off) value = Functions.SplitAxis(value, HalfAxis == HalfAxisMode.PositiveHalf);
             if (Invert) value = Functions.Invert(value);
             if (DeadZone != 0) value = _deadZoneHelper.ApplyRangeDeadZone(value);
             if (AntiDeadZone != 0) value = _antiDeadZoneHelper.ApplyRangeAntiDeadZone(value);

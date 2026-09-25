@@ -9,6 +9,7 @@ using System.Collections.ObjectModel;
 using HidWizards.UCR.Core.Managers;
 using HidWizards.UCR.Core.Models;
 using HidWizards.UCR.Core.Models.Binding;
+using HidWizards.UCR.Core.Services;
 using HidWizards.UCR.Utilities.Commands;
 using HidWizards.UCR.ViewModels;
 using HidWizards.UCR.ViewModels.Dashboard;
@@ -19,7 +20,24 @@ namespace HidWizards.UCR.ViewModels.Mapping
     {
         private readonly Context _context;
         private readonly Core.Models.Mapping _mapping;
-        
+
+        // Row identity, resolved once from the selected Output Device's own binding tree (see
+        // OutputSlotResolver) rather than a hardcoded key table. The row is fully recreated by
+        // PatchBayViewModel.PopulateRows() whenever the profile or output device changes, so these
+        // don't need to be mutable/observable.
+        private readonly Guid _outputDeviceConfigurationGuid;
+        private readonly int _outputKeyType;
+        private readonly int _outputKeyValue;
+        private readonly int _outputKeySubValue;
+
+        // Plugin template lookup by name, defaulting to the real MEF-discovered catalog in
+        // production. Exposed as an injectable seam (internal ctor overload below) because
+        // PluginManager.Plugins is only ever populated when a "Plugins" folder sits next to the
+        // running executable (see UCR.Plugins.csproj's post-build copy step) — that folder is never
+        // populated next to the test runner's output, so PluginManager.Plugins is always empty in
+        // UCR.Tests. Without this seam, GetOrCreateNextBinding/SwapToMergerPlugin are untestable.
+        private readonly Func<string, Plugin> _resolvePluginTemplate;
+
         public string Title { get; }
         public string TargetOutputKey { get; }
         public bool IsAxis { get; }
@@ -39,28 +57,95 @@ namespace HidWizards.UCR.ViewModels.Mapping
                 }
             }
         }
-        
+
         public InputScopeItem CurrentScope { get; set; }
         public ObservableCollection<InputScopeItem> FullCatalog { get; set; }
 
         public ICommand ListenCommand { get; }
         public ICommand ClearCommand { get; }
 
-        public MappingRowViewModel(Context context, Core.Models.Mapping mapping, string title, string targetOutputKey, bool isAxis)
+        private short _currentValue;
+        // Matches DeviceBindingViewModel.GetPreviewValue's existing convention for the same kind of
+        // bipolar-axis preview (centered at 50, moving left/right) rather than a magnitude-only 0-100,
+        // so a Patch Bay row and the Advanced panel's per-binding preview agree with each other.
+        public float InputValue => IsAxis ? 50f + (float)_currentValue / Core.Utilities.Constants.AxisMaxValue * 50f : 0;
+        public bool IsPressed => !IsAxis && _currentValue > 0;
+        public bool IsMerged => _mapping.Plugins.Count > 0 && (_mapping.Plugins[0].PluginName == "Axis Merger" || _mapping.Plugins[0].PluginName == "Button Merger");
+
+        private void UpdateLiveValues()
+        {
+            OnPropertyChanged(nameof(InputValue));
+            OnPropertyChanged(nameof(IsPressed));
+        }
+
+        public MappingRowViewModel(Context context, Core.Models.Mapping mapping, OutputSlot outputSlot, Guid outputDeviceConfigurationGuid)
+            : this(context, mapping, outputSlot, outputDeviceConfigurationGuid,
+                pluginName => context.PluginManager.Plugins.FirstOrDefault(p => p.PluginName == pluginName))
+        {
+        }
+
+        internal MappingRowViewModel(Context context, Core.Models.Mapping mapping, OutputSlot outputSlot,
+            Guid outputDeviceConfigurationGuid, Func<string, Plugin> resolvePluginTemplate)
         {
             _context = context;
             _mapping = mapping;
-            Title = title;
-            TargetOutputKey = targetOutputKey;
-            IsAxis = isAxis;
-            
+            _resolvePluginTemplate = resolvePluginTemplate;
+
+            Title = outputSlot.Title;
+            TargetOutputKey = outputSlot.SlotKey;
+            // Range (analog) slots render as a slider row; everything else (Momentary/Event/Delta)
+            // renders as a button row. See OutputSlotResolver's Delta caveat for the known gap there.
+            IsAxis = outputSlot.Category == DeviceBindingCategory.Range;
+
+            _outputDeviceConfigurationGuid = outputDeviceConfigurationGuid;
+            _outputKeyType = outputSlot.KeyType;
+            _outputKeyValue = outputSlot.KeyValue;
+            _outputKeySubValue = outputSlot.KeySubValue;
+
             ListenCommand = new RelayCommand(ExecuteListen);
             ClearCommand = new RelayCommand(ExecuteClear);
 
             Plugins = new ObservableCollection<PluginSummaryViewModel>();
             foreach (var plugin in _mapping.Plugins)
             {
-                Plugins.Add(new PluginSummaryViewModel(plugin));
+                Plugins.Add(new PluginSummaryViewModel(plugin, _mapping.DeviceBindings));
+            }
+
+            SubscribeToOutput();
+        }
+
+        private void SubscribeToOutput()
+        {
+            UnsubscribeFromOutput();
+            if (_mapping != null && _mapping.Plugins.Count > 0 && _mapping.Plugins[0].Outputs.Count > 0)
+            {
+                _mapping.Plugins[0].Outputs[0].PropertyChanged += OutputBinding_PropertyChanged;
+            }
+        }
+
+        private void UnsubscribeFromOutput()
+        {
+            if (_mapping != null && _mapping.Plugins.Count > 0 && _mapping.Plugins[0].Outputs.Count > 0)
+            {
+                _mapping.Plugins[0].Outputs[0].PropertyChanged -= OutputBinding_PropertyChanged;
+            }
+        }
+
+        private void OutputBinding_PropertyChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(DeviceBinding.CurrentValue))
+            {
+                var binding = sender as DeviceBinding;
+                if (binding != null && _context.ActiveProfile != null && binding.Profile.IsActive())
+                {
+                    _currentValue = binding.CurrentValue;
+                    UpdateLiveValues();
+                }
+                else if (_currentValue != 0)
+                {
+                    _currentValue = 0;
+                    UpdateLiveValues();
+                }
             }
         }
 
@@ -80,7 +165,9 @@ namespace HidWizards.UCR.ViewModels.Mapping
         }
 
         public bool IsBound => _mapping != null && _mapping.DeviceBindings.Count > 0 && _mapping.DeviceBindings[0].IsBound;
-        
+
+        private string _primarySourceDisplayNameOverride;
+
         public string PrimarySourceDisplayName
         {
             get
@@ -89,45 +176,153 @@ namespace HidWizards.UCR.ViewModels.Mapping
                 var bind = _mapping.DeviceBindings[0];
                 return bind.IsBound ? bind.BoundName() : string.Empty;
             }
-        }
-        
-        public ObservableCollection<ContextMenuItem> ManualPickerMenu => BuildManualPickerMenu();
-        
-        private DeviceBinding GetOrAddBinding()
-        {
-            if (_mapping.DeviceBindings.Count == 0)
+            set
             {
-                _mapping.DeviceBindings.Add(new DeviceBinding(null, _context.ActiveProfile, DeviceIoType.Input));
+                if (_primarySourceDisplayNameOverride != value)
+                {
+                    _primarySourceDisplayNameOverride = value;
+                    OnPropertyChanged();
+                }
             }
+        }
+
+        public ObservableCollection<ContextMenuItem> ManualPickerMenu => BuildManualPickerMenu();
+
+        // internal (not private) so UCR.Tests can drive the plugin-creation/merge-swap logic
+        // directly, bypassing the UI commands that wrap it (ListenCommand/the manual picker), which
+        // also touch BindingManager/IOController hardware-detection paths this logic doesn't need.
+        internal DeviceBinding GetOrCreateNextBinding()
+        {
             if (_mapping.Plugins.Count == 0)
             {
                 var pluginName = IsAxis ? "Axis to Axis" : "Button to Button";
-                var templatePlugin = _context.PluginManager.Plugins.FirstOrDefault(p => p.PluginName == pluginName);
+                var templatePlugin = _resolvePluginTemplate(pluginName);
                 if (templatePlugin != null)
                 {
                     var newPlugin = _context.PluginManager.GetNewPlugin(templatePlugin);
                     _mapping.AddPlugin(newPlugin);
+                    ResolveOutputBinding(newPlugin);
+                    Plugins.Add(new PluginSummaryViewModel(newPlugin, _mapping.DeviceBindings));
+                    SubscribeToOutput();
                 }
+                return _mapping.DeviceBindings.FirstOrDefault();
             }
+
+            if (!IsMerged && _mapping.DeviceBindings.Count == 1 && _mapping.DeviceBindings[0].IsBound)
+            {
+                SwapToMergerPlugin();
+                return _mapping.DeviceBindings.Count > 1 ? _mapping.DeviceBindings[1] : null;
+            }
+
+            return _mapping.DeviceBindings.FirstOrDefault(b => !b.IsBound) ?? _mapping.DeviceBindings.LastOrDefault();
+        }
+
+        private void SwapToMergerPlugin()
+        {
+            if (_mapping.Plugins.Count == 0) return;
+            var oldPlugin = _mapping.Plugins[0];
+            var oldBinding = _mapping.DeviceBindings[0];
+
+            // Save old binding state
+            var oldGuid = oldBinding.DeviceConfigurationGuid;
+            var oldType = oldBinding.KeyType;
+            var oldValue = oldBinding.KeyValue;
+            var oldSubValue = oldBinding.KeySubValue;
+            var oldIsBound = oldBinding.IsBound;
+
+            var mergerPluginName = IsAxis ? "Axis Merger" : "Button Merger";
+            var templatePlugin = _resolvePluginTemplate(mergerPluginName);
             
-            var binding = _mapping.DeviceBindings[0];
-            return binding;
+            if (templatePlugin != null)
+            {
+                var newPlugin = _context.PluginManager.GetNewPlugin(templatePlugin);
+                
+                _mapping.RemovePlugin(oldPlugin);
+                _mapping.AddPlugin(newPlugin);
+                
+                ResolveOutputBinding(newPlugin);
+                
+                // Restore old binding
+                if (oldIsBound)
+                {
+                    _mapping.DeviceBindings[0].SetDeviceConfigurationGuid(oldGuid);
+                    _mapping.DeviceBindings[0].SetKeyTypeValue(oldType, oldValue, oldSubValue);
+                }
+                
+                Plugins.Clear();
+                Plugins.Add(new PluginSummaryViewModel(newPlugin, _mapping.DeviceBindings));
+
+                OnPropertyChanged(nameof(IsMerged));
+                SubscribeToOutput();
+            }
+        }
+
+        // Points the plugin's single Output at this row's own slot on the selected Output Device,
+        // using the same two calls the manual Input picker already makes (SetDeviceConfigurationGuid
+        // + SetKeyTypeValue) — deliberately not a new binding-resolution path. Every plugin this row
+        // can hold (1:1 remapper or, later, a merge plugin) has exactly one Output category, so
+        // Outputs[0] is always the row's target regardless of which plugin is currently active.
+        private void ResolveOutputBinding(Plugin plugin)
+        {
+            if (plugin == null || plugin.Outputs.Count == 0) return;
+            if (_outputDeviceConfigurationGuid == Guid.Empty) return;
+
+            var outputBinding = plugin.Outputs[0];
+            outputBinding.SetDeviceConfigurationGuid(_outputDeviceConfigurationGuid);
+            outputBinding.SetKeyTypeValue(_outputKeyType, _outputKeyValue, _outputKeySubValue);
+            
+            SubscribeToOutput();
         }
 
         private void ExecuteListen(object parameter)
         {
-            var binding = GetOrAddBinding();
-            
+            if (IsMerged)
+            {
+                IsAdvancedExpanded = true;
+                return;
+            }
+
+            var binding = GetOrCreateNextBinding();
             if (!IsListening)
             {
+                // DeviceBinding.DeviceBindingCategory has no ctor default and Mapping.AddPlugin never
+                // sets it, so it sits at the enum's default (Event) unless something assigns it here.
+                // BindingManager only accepts a physical input whose category matches this exactly, and
+                // no real device ever reports "Event" (only the Button-to-Event plugin's own *output*
+                // does) -- leaving this unset means the Listen button can never capture anything.
+                binding.DeviceBindingCategory = IsAxis ? DeviceBindingCategory.Range : DeviceBindingCategory.Momentary;
                 binding.PropertyChanged += Binding_PropertyChanged;
                 binding.EnterBindMode();
+                PrimarySourceDisplayName = "Press Input...";
                 IsListening = true;
             }
             else
             {
-                // Can't trivially cancel bind mode, but we can reset our local state if needed.
-                // In UCR, bind mode ends automatically when an input is detected or timeout.
+                EndListening(binding);
+            }
+        }
+
+        private void EndListening(DeviceBinding binding)
+        {
+            binding.PropertyChanged -= Binding_PropertyChanged;
+            IsListening = false;
+        }
+
+        private void ExecuteClear(object parameter)
+        {
+            if (IsMerged)
+            {
+                IsAdvancedExpanded = true;
+                return;
+            }
+
+            if (_mapping.DeviceBindings.Count > 0)
+            {
+                var binding = _mapping.DeviceBindings[0];
+                binding.ClearBinding();
+                _primarySourceDisplayNameOverride = null;
+                OnPropertyChanged(nameof(IsBound));
+                OnPropertyChanged(nameof(PrimarySourceDisplayName));
             }
         }
 
@@ -140,6 +335,7 @@ namespace HidWizards.UCR.ViewModels.Mapping
                 {
                     binding.PropertyChanged -= Binding_PropertyChanged;
                     IsListening = false;
+                    _primarySourceDisplayNameOverride = null;
                     OnPropertyChanged(nameof(IsBound));
                     OnPropertyChanged(nameof(PrimarySourceDisplayName));
                     _context.ContextChanged();
@@ -147,22 +343,11 @@ namespace HidWizards.UCR.ViewModels.Mapping
             }
         }
 
-        private void ExecuteClear(object parameter)
-        {
-            if (_mapping != null && _mapping.DeviceBindings.Count > 0)
-            {
-                var binding = _mapping.DeviceBindings[0];
-                binding.ClearBinding();
-                OnPropertyChanged(nameof(IsBound));
-                OnPropertyChanged(nameof(PrimarySourceDisplayName));
-            }
-        }
-
         private ObservableCollection<ContextMenuItem> BuildManualPickerMenu()
         {
             var menuList = new ObservableCollection<ContextMenuItem>();
             if (_context.ActiveProfile == null) return menuList;
-            
+
             var devicesManager = _context.DevicesManager;
             var deviceConfigurationList = _context.ActiveProfile.GetDeviceConfigurationList(DeviceIoType.Input)
                 .OrderBy(c => devicesManager.GetDeviceSortOrder(c.Device))
@@ -202,9 +387,19 @@ namespace HidWizards.UCR.ViewModels.Mapping
                 {
                     cmd = new RelayCommand(c =>
                     {
-                        var binding = GetOrAddBinding();
-                        binding.SetDeviceConfigurationGuid(deviceConfigurationGuid);
-                        binding.SetKeyTypeValue(node.DeviceBindingInfo.KeyType, node.DeviceBindingInfo.KeyValue, node.DeviceBindingInfo.KeySubValue);
+                        if (IsMerged)
+                        {
+                            IsAdvancedExpanded = true;
+                            return;
+                        }
+
+                        var binding = GetOrCreateNextBinding();
+                        if (binding != null)
+                        {
+                            binding.SetDeviceConfigurationGuid(deviceConfigurationGuid);
+                            binding.SetKeyTypeValue(node.DeviceBindingInfo.KeyType, node.DeviceBindingInfo.KeyValue, node.DeviceBindingInfo.KeySubValue);
+                            PrimarySourceDisplayName = binding.BoundName();
+                        }
                         OnPropertyChanged(nameof(IsBound));
                         OnPropertyChanged(nameof(PrimarySourceDisplayName));
                         _context.ContextChanged();

@@ -20,6 +20,58 @@
     </UserControl.Resources>
 
     <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <!-- SELECTED SCOPE'S GAME PROFILE. Shown once a single device or a group is selected as the
+             Mapping target (DevicesViewModel.CurrentScope) — lets the user see, choose/create, and
+             edit that scope's associated profile without leaving the Devices tab. -->
+        <materialDesign:Card Grid.Row="0" Margin="0,0,0,16" Padding="12"
+                              Visibility="{Binding HasSelectedScope, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="{Binding SelectedScopeDisplayName, StringFormat='Selected: {0}'}" FontWeight="SemiBold" />
+                    <TextBlock FontSize="12" Foreground="{DynamicResource MaterialDesignBodyLight}">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Text" Value="{Binding AssociatedProfileName, StringFormat='Profile: {0}'}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding HasAssociatedProfile}" Value="False">
+                                        <Setter Property="Text" Value="No Game Profile yet — choose or create one to begin mapping." />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+                <Button Grid.Column="1" Command="{Binding EditProfileCommand}" ToolTip="Edit profile"
+                        Style="{StaticResource MaterialDesignToolButton}" Margin="8,0,0,0"
+                        Visibility="{Binding HasAssociatedProfile, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <materialDesign:PackIcon Kind="Pencil" />
+                </Button>
+                <Button Grid.Column="2" Content="CHOOSE / CREATE PROFILE" Command="{Binding ChooseProfileCommand}" Margin="8,0,0,0">
+                    <Button.Style>
+                        <Style TargetType="Button" BasedOn="{StaticResource MaterialDesignRaisedButton}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasAssociatedProfile}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Button.Style>
+                </Button>
+            </Grid>
+        </materialDesign:Card>
+
+    <Grid Grid.Row="1">
         <Grid.ColumnDefinitions>
             <!-- Left Column: Detected Devices -->
             <ColumnDefinition Width="5*" />
@@ -34,15 +86,19 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             
-            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,12">
-                <Button Style="{StaticResource MaterialDesignToolButton}" Margin="0,0,8,0" Click="Back_OnClick">
-                    <materialDesign:PackIcon Kind="ArrowLeft" Width="20" Height="20"/>
+            <Grid Grid.Row="0" Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="DETECTED DEVICES" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource MaterialDesignBodyLight}" VerticalAlignment="Center" />
+                <Button Grid.Column="1" Style="{StaticResource MaterialDesignToolButton}" ToolTip="Manage all devices (rename, hide, remove, reorder)"
+                        Padding="0" Width="24" Height="24" Click="ManageDevices_OnClick">
+                    <materialDesign:PackIcon Kind="Cog" Width="18" Height="18" Foreground="{DynamicResource MaterialDesignBodyLight}" />
                 </Button>
-                <TextBlock Text="DETECTED DEVICES" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource MaterialDesignBodyLight}" VerticalAlignment="Center" />
-            </StackPanel>
+            </Grid>
             
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                 <ItemsControl ItemsSource="{Binding DetectedDevices}">
@@ -61,32 +117,13 @@
                                         <TextBlock Text="{Binding ConnectionType}" FontSize="11" Foreground="{DynamicResource MaterialDesignBodyLight}" />
                                     </StackPanel>
                                     <!-- Placeholder for VID/PID or icon if we want to expand -->
-                                    <materialDesign:PackIcon Grid.Column="2" Kind="Controller" VerticalAlignment="Center" Foreground="{DynamicResource MaterialDesignBodyLight}" />
+                                    <materialDesign:PackIcon Grid.Column="2" Kind="Gamepad" VerticalAlignment="Center" Foreground="{DynamicResource MaterialDesignBodyLight}" />
                                 </Grid>
                             </Border>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>
             </ScrollViewer>
-
-            <!-- Grouping Action Bar -->
-            <Border Grid.Row="2" Background="{DynamicResource MaterialDesignCardBackground}" Margin="0,16,0,0" Padding="12" CornerRadius="4">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="Auto" />
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="{Binding GroupingMessage}" VerticalAlignment="Center" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource MaterialDesignBodyLight}" Margin="0,0,12,0"/>
-                    <Button Grid.Column="1" Command="{Binding GroupSelectedCommand}" Style="{StaticResource MaterialDesignRaisedButton}" 
-                            Visibility="{Binding CanGroup, Converter={StaticResource BooleanToVisibilityConverter}}">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="Group selected" />
-                            <TextBlock Text="{Binding SelectedCount, StringFormat=' ({0})'}" />
-                            <materialDesign:PackIcon Kind="ArrowRight" Margin="4,0,0,0" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
-                </Grid>
-            </Border>
         </Grid>
 
         <!-- Right Column -->
@@ -106,12 +143,15 @@
                                 <StackPanel>
                                     <Grid>
                                         <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
-                                        <TextBox Grid.Column="0" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}" 
+                                        <CheckBox Grid.Column="0" IsChecked="{Binding IsSelectedForMapping}" Margin="0,0,8,0" VerticalAlignment="Center"
+                                                  ToolTip="Use this group as the Mapping target" />
+                                        <TextBox Grid.Column="1" Text="{Binding Name, UpdateSourceTrigger=PropertyChanged}"
                                                  Style="{StaticResource MaterialDesignTextBox}" FontSize="14" FontWeight="SemiBold" />
-                                        <Button Grid.Column="1" Command="{Binding RemoveGroupCommand}" 
+                                        <Button Grid.Column="2" Command="{Binding RemoveGroupCommand}"
                                                 Style="{StaticResource MaterialDesignToolButton}" ToolTip="Ungroup" Padding="0" Width="24" Height="24" Margin="8,0,0,0">
                                             <materialDesign:PackIcon Kind="Close" />
                                         </Button>
@@ -153,5 +193,49 @@
                 </ItemsControl>
             </ScrollViewer>
         </Grid>
+    </Grid>
+
+    <!-- Grouping Action Bar: full app width so the message never gets squeezed, buttons anchored right. -->
+    <Border Grid.Row="2" Background="{DynamicResource MaterialDesignCardBackground}" Margin="0,16,0,0" Padding="12" CornerRadius="4">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="{Binding GroupingMessage}" VerticalAlignment="Center" TextWrapping="Wrap" FontSize="12" Foreground="{DynamicResource MaterialDesignBodyLight}" Margin="0,0,12,0"/>
+            <Button Grid.Column="1" Content="Add to group ▾" Margin="0,0,8,0"
+                    Click="AddToGroupButton_OnClick">
+                <Button.Style>
+                    <Style TargetType="Button" BasedOn="{StaticResource MaterialDesignRaisedButton}">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding CanAddToExistingGroup}" Value="False">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+                <Button.ContextMenu>
+                    <ContextMenu Style="{StaticResource MaterialDesignContextMenu}" ItemsSource="{Binding DeviceGroups}">
+                        <ContextMenu.ItemContainerStyle>
+                            <Style TargetType="MenuItem">
+                                <Setter Property="Header" Value="{Binding Name}" />
+                                <Setter Property="Command" Value="{Binding DataContext.AddToGroupCommand, RelativeSource={RelativeSource AncestorType=UserControl}}" />
+                                <Setter Property="CommandParameter" Value="{Binding Guid}" />
+                            </Style>
+                        </ContextMenu.ItemContainerStyle>
+                    </ContextMenu>
+                </Button.ContextMenu>
+            </Button>
+            <Button Grid.Column="2" Command="{Binding GroupSelectedCommand}" Style="{StaticResource MaterialDesignRaisedButton}"
+                    Visibility="{Binding CanGroup, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="Group selected" />
+                    <TextBlock Text="{Binding SelectedCount, StringFormat=' ({0})'}" />
+                    <materialDesign:PackIcon Kind="ArrowRight" Margin="4,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+        </Grid>
+    </Border>
     </Grid>
 </UserControl>

@@ -24,6 +24,14 @@ namespace HidWizards.UCR.Core
         public List<Profile> Profiles { get; set; }
         public List<DeviceAlias> DeviceAliases { get; set; }
         public List<DeviceGroup> DeviceGroups { get; set; }
+        // Maps a mapping-scope id (a device's DeviceIdentity.BuildLogicalKey, or a DeviceGroup's Guid
+        // as a string) to the Guid of the Profile bound to it. Keyed by string rather than a typed
+        // union because both id spaces already exist independently (see InputScopeItem.Id) and this
+        // avoids a device/group discriminator field nobody else needs.
+        // [XmlIgnore]: XmlSerializer cannot reflect a Dictionary<,> (used only by the legacy
+        // context.xml import/DeepXmlClone path). Persisted separately via ContextStore's GroupsFile
+        // (plain JSON, unaffected by this attribute).
+        [XmlIgnore] public Dictionary<string, Guid> ScopeProfileAssociations { get; set; }
 
         /* Runtime */
         [XmlIgnore] public Profile ActiveProfile { get; set; }
@@ -34,6 +42,7 @@ namespace HidWizards.UCR.Core
         [XmlIgnore] public BindingManager BindingManager { get; set; }
         [XmlIgnore] public HidWizards.UCR.Core.Services.DeviceAliasService DeviceAliasService { get; set; }
         [XmlIgnore] public HidWizards.UCR.Core.Services.DeviceGroupService DeviceGroupService { get; set; }
+        [XmlIgnore] public HidWizards.UCR.Core.Services.ScopeProfileAssociationService ScopeProfileAssociationService { get; set; }
 
         public delegate void ActiveProfileChanged(Profile profile);
         public event ActiveProfileChanged ActiveProfileChangedEvent;
@@ -71,6 +80,7 @@ namespace HidWizards.UCR.Core
             Profiles = new List<Profile>();
             DeviceAliases = new List<DeviceAlias>();
             DeviceGroups = new List<DeviceGroup>();
+            ScopeProfileAssociations = new Dictionary<string, Guid>();
 
             try
             {
@@ -83,6 +93,7 @@ namespace HidWizards.UCR.Core
             
             DeviceAliasService = new HidWizards.UCR.Core.Services.DeviceAliasService(this);
             DeviceGroupService = new HidWizards.UCR.Core.Services.DeviceGroupService(this);
+            ScopeProfileAssociationService = new HidWizards.UCR.Core.Services.ScopeProfileAssociationService(this);
             ProfilesManager = new ProfilesManager(this, Profiles);
             DevicesManager = new DevicesManager(this);
             SubscriptionsManager = new SubscriptionsManager(this);
@@ -146,6 +157,7 @@ namespace HidWizards.UCR.Core
             if (Profiles == null) Profiles = new List<Profile>();
             if (DeviceAliases == null) DeviceAliases = new List<DeviceAlias>();
             if (DeviceGroups == null) DeviceGroups = new List<DeviceGroup>();
+            if (ScopeProfileAssociations == null) ScopeProfileAssociations = new Dictionary<string, Guid>();
 
             foreach (var profile in Profiles)
             {
