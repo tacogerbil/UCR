@@ -12,7 +12,6 @@ using Nuke.Common.Tools.NUnit;
 using Nuke.Common.Tools.GitVersion;
 using Nuke.Common.Tooling;
 
-using static Nuke.Common.Tools.Git.GitTasks;
 using static Nuke.Common.Tools.MSBuild.MSBuildTasks;
 using static Nuke.Common.ChangeLog.ChangelogTasks;
 using static Nuke.Common.EnvironmentInfo;
@@ -38,7 +37,7 @@ class Build : NukeBuild
     string ChangeLogFile => RootDirectory / "CHANGELOG.md";
 
     string IoWrapper => "IOWrapper";
-    AbsolutePath IoWrapperDirectory => RootDirectory / "submodules" / IoWrapper;
+    AbsolutePath IoWrapperDirectory => RootDirectory / IoWrapper;
     AbsolutePath IoWrapperSolution => IoWrapperDirectory / (IoWrapper + ".sln");
     AbsolutePath UcrOutputDirectory => RootDirectory / "UCR" / "bin" / Configuration;
     AbsolutePath TestDirectory => RootDirectory / "UCR.Tests";
@@ -63,21 +62,14 @@ class Build : NukeBuild
             EnsureExistingDirectory(RootDirectory / "Plugins");
         });
 
-    Target InitSubmodules => _ => _
-        .Executes(() =>
-        {
-            Git("submodule init");
-            Git("submodule update");
-        });
-
-    Target RestoreSubmodules => _ => _
+    Target RestoreIOWrapper => _ => _
         .Executes(() =>
         {
             NuGetTasks.NuGetRestore(s => s.SetTargetPath(IoWrapperSolution));
         });
 
-    Target CompileSubmodules => _ => _
-        .DependsOn(RestoreSubmodules)
+    Target CompileIOWrapper => _ => _
+        .DependsOn(RestoreIOWrapper)
         .Executes(() =>
         {
             MSBuild(s => s
@@ -93,12 +85,11 @@ class Build : NukeBuild
         });
 
     Target InitProject => _ => _
-        .DependsOn(InitSubmodules)
-        .DependsOn(RestoreSubmodules)
-        .DependsOn(CompileSubmodules)
+        .DependsOn(RestoreIOWrapper)
+        .DependsOn(CompileIOWrapper)
         .Executes(() =>
         {
-            
+
         });
 
     Target Restore => _ => _

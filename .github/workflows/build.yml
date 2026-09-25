@@ -15,8 +15,6 @@ jobs:
     steps:
       - name: Check out UCR Stylish
         uses: actions/checkout@v6
-        with:
-          submodules: false
 
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v3
@@ -36,9 +34,9 @@ jobs:
           msbuild -version
           nuget help | Select-Object -First 1
 
-          # The IOWrapper submodule (third-party, pinned to a fixed commit) still targets
-          # classic .NET Framework 4.5.2/4.6.1 - these targeting packs are required to build
-          # it below. UCR itself has been fully migrated to net8.0-windows and no longer
+          # The vendored IOWrapper source (third-party, MIT-licensed, under IOWrapper/) still
+          # targets classic .NET Framework 4.5.2/4.6.1 - these targeting packs are required to
+          # build it below. UCR itself has been fully migrated to net8.0-windows and no longer
           # needs them, but IOWrapper has not been touched and is out of scope for that migration.
           $net452 = "${env:ProgramFiles(x86)}\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.5.2\mscorlib.dll"
           if (-not (Test-Path $net452)) {
@@ -82,91 +80,11 @@ jobs:
           }
           Write-Host "Verified .NET Framework 4.6.1 reference assemblies: $net461"
 
-      - name: Fetch exact pinned IOWrapper source
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $expected = '4ef0a847fb479cfbe561656097639d3cef5240b7'
-          $destination = Join-Path $PWD 'submodules\IOWrapper'
-
-          if (Test-Path $destination) {
-            Remove-Item -LiteralPath $destination -Recurse -Force
-          }
-          New-Item -ItemType Directory -Path (Split-Path $destination) -Force | Out-Null
-
-          git clone https://github.com/evilC/IOWrapper.git $destination
-          git -C $destination checkout --detach $expected
-
-          $actual = (git -C $destination rev-parse HEAD).Trim()
-          if ($LASTEXITCODE -ne 0) {
-            throw 'Unable to read the checked-out IOWrapper commit.'
-          }
-          if ($actual -ne $expected) {
-            throw "IOWrapper commit mismatch. Expected $expected, got $actual."
-          }
-          Write-Host "Verified IOWrapper commit: $actual"
-
-      - name: Preserve IOWrapper input callback order
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          .\build\ProviderPatches\Apply-IOWrapperInputOrdering.ps1 -IOWrapperRoot .\submodules\IOWrapper
-
-      - name: Serialize Core ViGEm DS4 report writes
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          .\build\ProviderPatches\Apply-CoreViGEmDs4Serialization.ps1 -IOWrapperRoot .\submodules\IOWrapper
-
-      - name: Apply IOController dispose pattern fix
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          .\build\ProviderPatches\Apply-IOControllerDisposePattern.ps1 -IOWrapperRoot .\submodules\IOWrapper
-
-      - name: Remove Core ViGEm Costura weaving
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          .\build\ProviderPatches\Apply-CoreViGEmRemoveCostura.ps1 -IOWrapperRoot .\submodules\IOWrapper
-
-      - name: Enable Core Interception blocking
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-
-          $settings = Join-Path $PWD 'submodules\IOWrapper\Source\Core Providers\Core_Interception\Settings.xml'
-          if (-not (Test-Path -LiteralPath $settings -PathType Leaf)) {
-            throw "Core Interception settings file is missing: $settings"
-          }
-
-          [xml]$xml = Get-Content -LiteralPath $settings -Raw
-          $blockingSettings = @($xml.SelectNodes('/Settings/Setting[Name="BlockingEnabled"]/Value'))
-          if ($blockingSettings.Count -ne 1) {
-            throw "Expected exactly one BlockingEnabled setting, found $($blockingSettings.Count). Refusing to modify an unexpected settings layout."
-          }
-
-          $oldValue = $blockingSettings[0].InnerText.Trim()
-          if ($oldValue -notin @('false', 'False', 'FALSE', 'true', 'True', 'TRUE')) {
-            throw "Unexpected BlockingEnabled value: $oldValue"
-          }
-
-          $blockingSettings[0].InnerText = 'true'
-          $xml.Save($settings)
-
-          [xml]$verified = Get-Content -LiteralPath $settings -Raw
-          $verifiedSettings = @($verified.SelectNodes('/Settings/Setting[Name="BlockingEnabled"]/Value'))
-          if ($verifiedSettings.Count -ne 1 -or $verifiedSettings[0].InnerText.Trim() -ne 'true') {
-            throw 'Failed to enable Core Interception blocking.'
-          }
-
-          Write-Host "Core Interception BlockingEnabled changed from '$oldValue' to 'true'."
-
       - name: Restore IOWrapper NuGet packages
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          nuget restore .\submodules\IOWrapper\IOWrapper.sln -NonInteractive
+          nuget restore .\IOWrapper\IOWrapper.sln -NonInteractive
           if ($LASTEXITCODE -ne 0) {
             throw "IOWrapper NuGet restore failed with exit code $LASTEXITCODE."
           }
@@ -175,15 +93,15 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          msbuild .\submodules\IOWrapper\IOWrapper.sln /m /t:Rebuild /p:Configuration=Release /v:minimal
+          msbuild .\IOWrapper\IOWrapper.sln /m /t:Rebuild /p:Configuration=Release /v:minimal
           if ($LASTEXITCODE -ne 0) {
             throw "IOWrapper Release build failed with exit code $LASTEXITCODE."
           }
 
           $required = @(
-            '.\submodules\IOWrapper\Artifacts\IOWrapper\IOWrapper.Core.dll',
-            '.\submodules\IOWrapper\Artifacts\IOWrapper\IOWrapper.DTOs.dll',
-            '.\submodules\IOWrapper\Artifacts\IOWrapper\IOWrapper.IProvider.dll'
+            '.\IOWrapper\Artifacts\IOWrapper\IOWrapper.Core.dll',
+            '.\IOWrapper\Artifacts\IOWrapper\IOWrapper.DTOs.dll',
+            '.\IOWrapper\Artifacts\IOWrapper\IOWrapper.IProvider.dll'
           )
           foreach ($file in $required) {
             if (-not (Test-Path $file)) {
@@ -192,7 +110,10 @@ jobs:
           }
           Write-Host 'Verified required IOWrapper artifacts.'
 
-          $interceptionSettings = '.\submodules\IOWrapper\Artifacts\Providers\Core_Interception\Settings.xml'
+          # BlockingEnabled=true and the other provider fixes below are committed directly in
+          # IOWrapper/ now (vendored source, no longer a re-cloned/re-patched submodule) - this
+          # check confirms the vendored Settings.xml made it through the build unchanged.
+          $interceptionSettings = '.\IOWrapper\Artifacts\Providers\Core_Interception\Settings.xml'
           if (-not (Test-Path -LiteralPath $interceptionSettings -PathType Leaf)) {
             throw "Core Interception artifact settings are missing: $interceptionSettings"
           }
@@ -225,17 +146,17 @@ jobs:
           $overrides = @(
             @{
               Source = '.\build\ProviderOverrides\Providers\Core_Interception\IOWrapper.Libraries.PollingDeviceHandler.dll'
-              Destination = '.\submodules\IOWrapper\Artifacts\Providers\Core_Interception\IOWrapper.Libraries.PollingDeviceHandler.dll'
+              Destination = '.\IOWrapper\Artifacts\Providers\Core_Interception\IOWrapper.Libraries.PollingDeviceHandler.dll'
               Sha256 = 'dec7437219bb5b410955c0fc50d1a3f92af31cf08bc1c23ec7e5dcdfa4207b25'
             },
             @{
               Source = '.\build\ProviderOverrides\Providers\Core_ViGEm\Nefarius.ViGEmClient.dll'
-              Destination = '.\submodules\IOWrapper\Artifacts\Providers\Core_ViGEm\Nefarius.ViGEmClient.dll'
+              Destination = '.\IOWrapper\Artifacts\Providers\Core_ViGEm\Nefarius.ViGEmClient.dll'
               Sha256 = 'c60742c0a069d48488eb4e544b1b7ec3fb99db7fe4a07467bebe326900963074'
             },
             @{
               Source = '.\build\ProviderOverrides\Providers\Core_ViGEm\vigemclient.dll'
-              Destination = '.\submodules\IOWrapper\Artifacts\Providers\Core_ViGEm\vigemclient.dll'
+              Destination = '.\IOWrapper\Artifacts\Providers\Core_ViGEm\vigemclient.dll'
               Sha256 = '5e0ede288c2e9e753386f09400c592aa872bfdb7680faef6f780e9b1720ace7c'
             }
           )
@@ -266,7 +187,7 @@ jobs:
         run: |
           $ErrorActionPreference = 'Stop'
 
-          $source = Join-Path $PWD 'submodules\IOWrapper\Artifacts'
+          $source = Join-Path $PWD 'IOWrapper\Artifacts'
           $destination = Join-Path $PWD 'dependencies'
 
           if (-not (Test-Path -LiteralPath $source -PathType Container)) {
