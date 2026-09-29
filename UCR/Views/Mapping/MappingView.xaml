@@ -18,6 +18,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
@@ -99,7 +100,60 @@
             </StackPanel>
         </Expander>
 
-        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+        <!-- Keyboard Shortcuts: "Button to Keyboard Key" mappings, same shape as Filters above:
+             don't target any output-device slot either, since sending a keystroke is a side effect, not
+             a controller button. Deliberately NOT a separate output device the user has to switch to:
+             there is exactly one output device (the real controller) the Patch Bay above shows; this is
+             just another kind of thing a button can trigger. -->
+        <Expander Grid.Row="2" Header="Keyboard Shortcuts" IsExpanded="False"
+                  BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="0,0,0,1">
+            <StackPanel Margin="8">
+                <ItemsControl ItemsSource="{Binding KeyboardShortcuts}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="0,0,0,1" Padding="8,4" Margin="0,0,0,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock Text="Sends this key while the button below is held" FontWeight="Bold" Opacity="0.8" Margin="0,0,0,4"/>
+                                        <ItemsControl ItemsSource="{Binding PluginSummary.DeviceBindings}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <controls:DeviceBindingControl DataContext="{Binding}" DeviceBinding="{Binding DeviceBinding}" Label="{Binding DeviceBindingName}" Category="{Binding DeviceBindingCategory}"/>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                    <controls:KeyCaptureControl Grid.Column="1" VerticalAlignment="Top" Margin="8,0" CapturedKeyCode="{Binding KeyCode, Mode=TwoWay}"/>
+                                    <Button Grid.Column="2" Style="{StaticResource MaterialDesignToolButton}" Command="{Binding RemoveCommand}"
+                                            Content="✕" Width="32" Height="32" Foreground="Red" ToolTip="Remove this keyboard shortcut" VerticalAlignment="Top"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <TextBlock Margin="0,0,0,8" Foreground="{DynamicResource MaterialDesignBodyLight}" FontStyle="Italic" TextWrapping="Wrap"
+                           Text="No keyboard shortcuts yet. Add one to have a button send a keystroke -- e.g. a wheel button beyond what your controller layout has room for.">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding KeyboardShortcuts.Count}" Value="0">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+                <Button Content="+ ADD KEYBOARD KEY" Command="{Binding AddKeyboardShortcutCommand}" Style="{StaticResource MaterialDesignRaisedButton}" HorizontalAlignment="Left"/>
+            </StackPanel>
+        </Expander>
+
+        <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto">
             <ItemsControl ItemsSource="{Binding Rows}">
                 <ItemsControl.Style>
                     <Style TargetType="ItemsControl">
@@ -220,8 +274,12 @@
                                 </Grid>
 
                                 <!-- Live Indicator -->
-                                <ProgressBar Grid.Row="0" Grid.Column="3" Value="{Binding InputValue, Mode=OneWay}" Height="8" VerticalAlignment="Center" Margin="0,0,12,0"
-                                             Visibility="{Binding IsAxis, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                <StackPanel Grid.Row="0" Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,12,0"
+                                            Visibility="{Binding IsAxis, Converter={StaticResource BooleanToVisibilityConverter}}">
+                                    <ProgressBar Value="{Binding InputValue, Mode=OneWay}" Height="8" Width="55" VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding InputValue, StringFormat={}{0:F0}%}" FontSize="10" Opacity="0.7"
+                                               Margin="6,0,0,0" VerticalAlignment="Center" MinWidth="28"/>
+                                </StackPanel>
 
                                 <Border Grid.Row="0" Grid.Column="3" Width="20" Height="20" CornerRadius="10" 
                                         BorderBrush="Gray" BorderThickness="2" VerticalAlignment="Center" Margin="0,0,12,0">
@@ -253,6 +311,12 @@
                                         Visibility="{Binding IsAdvancedExpanded, Converter={StaticResource BooleanToVisibilityConverter}}"
                                         Background="{DynamicResource MaterialDesignPaper}" Margin="0,12,0,0" Padding="12"
                                         BorderBrush="{DynamicResource MaterialDesignDivider}" BorderThickness="1" CornerRadius="4">
+                                  <StackPanel>
+                                    <Button Content="✕ REMOVE MERGED INPUT" Command="{Binding UnmergeCommand}"
+                                            Style="{StaticResource MaterialDesignRaisedButton}"
+                                            Foreground="Red" HorizontalAlignment="Left" Margin="0,0,0,12"
+                                            Visibility="{Binding IsMerged, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                            ToolTip="Discard the second merged input and return this row to a single plugin (e.g. Axis to Axis), restoring the first input's binding"/>
                                     <ItemsControl ItemsSource="{Binding Plugins}">
                                         <ItemsControl.ItemTemplate>
                                             <DataTemplate>
@@ -321,6 +385,7 @@
                                             </DataTemplate>
                                         </ItemsControl.ItemTemplate>
                                     </ItemsControl>
+                                  </StackPanel>
                                 </Border>
                             </Grid>
                         </Border>

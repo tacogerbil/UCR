@@ -63,6 +63,11 @@ namespace HidWizards.UCR.ViewModels.Mapping
         public ICommand AddButtonFilterCommand { get; }
         public ICommand AddAxisFilterCommand { get; }
 
+        // "Button to Keyboard Key" mappings -- same shape as FilterProducers: no TargetOutputKey,
+        // since sending a keystroke doesn't target any output-device slot.
+        public ObservableCollection<KeyboardShortcutRowViewModel> KeyboardShortcuts { get; } = new ObservableCollection<KeyboardShortcutRowViewModel>();
+        public ICommand AddKeyboardShortcutCommand { get; }
+
         // Plugin template lookup by name, defaulting to the real MEF-discovered catalog in production.
         // Exposed as an injectable seam (internal ctor overload below) for the same reason
         // MappingRowViewModel needs one: PluginManager.Plugins is only ever populated when a "Plugins"
@@ -80,6 +85,7 @@ namespace HidWizards.UCR.ViewModels.Mapping
             _resolvePluginTemplate = resolvePluginTemplate;
             AddButtonFilterCommand = new RelayCommand(_ => AddFilterProducer("Button to Filter"));
             AddAxisFilterCommand = new RelayCommand(_ => AddFilterProducer("Axis to Filter"));
+            AddKeyboardShortcutCommand = new RelayCommand(_ => AddKeyboardShortcut());
         }
 
         public void SetProfile(Profile profile)
@@ -87,6 +93,7 @@ namespace HidWizards.UCR.ViewModels.Mapping
             _currentProfile = profile;
             PopulateRows();
             PopulateFilterProducers();
+            PopulateKeyboardShortcuts();
         }
 
         private void PopulateFilterProducers()
@@ -130,6 +137,49 @@ namespace HidWizards.UCR.ViewModels.Mapping
             _currentProfile?.RemoveMapping(row.Mapping);
             row.Dispose();
             FilterProducers.Remove(row);
+        }
+
+        private void PopulateKeyboardShortcuts()
+        {
+            foreach (var row in KeyboardShortcuts) row.Dispose();
+            KeyboardShortcuts.Clear();
+            if (_currentProfile == null) return;
+
+            foreach (var mapping in _currentProfile.Mappings)
+            {
+                if (!string.IsNullOrEmpty(mapping.TargetOutputKey)) continue;
+                if (mapping.Plugins.Count == 0 || !mapping.Plugins[0].IsKeyboardKeyProducer) continue;
+
+                AddKeyboardShortcutRow(mapping);
+            }
+        }
+
+        private void AddKeyboardShortcutRow(Core.Models.Mapping mapping)
+        {
+            var row = new KeyboardShortcutRowViewModel(mapping) { Remove = RemoveKeyboardShortcut };
+            KeyboardShortcuts.Add(row);
+        }
+
+        private void AddKeyboardShortcut()
+        {
+            if (_currentProfile == null) return;
+            var templatePlugin = _resolvePluginTemplate("Button to Keyboard Key");
+            if (templatePlugin == null) return;
+
+            var mapping = new Core.Models.Mapping(_currentProfile, "Button to Keyboard Key");
+            _currentProfile.Mappings.Add(mapping);
+
+            var newPlugin = _context.PluginManager.GetNewPlugin(templatePlugin);
+            mapping.AddPlugin(newPlugin);
+
+            AddKeyboardShortcutRow(mapping);
+        }
+
+        private void RemoveKeyboardShortcut(KeyboardShortcutRowViewModel row)
+        {
+            _currentProfile?.RemoveMapping(row.Mapping);
+            row.Dispose();
+            KeyboardShortcuts.Remove(row);
         }
 
         // Keeps SelectedOutputDeviceConfiguration in sync with the toolbar's Output Device dropdown

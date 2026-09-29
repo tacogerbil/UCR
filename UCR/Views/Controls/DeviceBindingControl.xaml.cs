@@ -29,6 +29,11 @@ namespace HidWizards.UCR.Views.Controls
 
         private bool HasLoaded = false;
 
+        // Guards the programmatic SelectedItem reset in DeviceNumberBox_OnSelected (after arming
+        // "Virtual Keyboard" capture) from re-entering that same handler as a second, synthetic
+        // "real device picked" selection change.
+        private bool _isSyncingDeviceSelection;
+
         public DeviceBindingControl()
         {
             BindMenu = new ObservableCollection<ContextMenuItem>();
@@ -266,15 +271,64 @@ namespace HidWizards.UCR.Views.Controls
 
         private void DeviceNumberBox_OnSelected(object sender, RoutedEventArgs e)
         {
-            if (!HasLoaded) return;
+            if (!HasLoaded || _isSyncingDeviceSelection) return;
             if (DeviceSelectionBox.SelectedItem == null) return;
+
+            var viewModel = DataContext as DeviceBindingViewModel;
+            var selectedItem = DeviceSelectionBox.SelectedItem as ComboBoxItemViewModel;
+
+            if (viewModel != null && selectedItem != null &&
+                selectedItem.Value == DeviceBindingViewModel.VirtualKeyboardSentinelGuid)
+            {
+                // Not a real device -- never call ChangeDeviceConfiguration for it (there's no
+                // DeviceConfiguration to resolve). Only arms BindButton to start capture on its own
+                // Click (see BindButton_OnClick) -- a ComboBox selection can't reliably grab WPF
+                // keyboard focus itself, so capture can't start here. Then snaps the combo's displayed
+                // selection back to the real bound device (SetSelectDevice always resolves from
+                // DeviceConfigurationGuid, which this never touches) so the picker doesn't get visually
+                // stuck showing "Virtual Keyboard" -- guarded so that reset doesn't re-enter this
+                // handler as a synthetic "real device picked" selection and cancel the arm we just set.
+                viewModel.BeginCapturingAuxiliaryKey();
+                _isSyncingDeviceSelection = true;
+                try
+                {
+                    DeviceSelectionBox.SelectedItem = viewModel.SelectedDevice;
+                }
+                finally
+                {
+                    _isSyncingDeviceSelection = false;
+                }
+                return;
+            }
+
+            // A genuine real-device pick replaces whatever "Virtual Keyboard" arm/capture state was
+            // pending -- it was tied to a dropdown entry that's no longer selected.
+            viewModel?.CancelCapturingAuxiliaryKey();
 
             var selectedDeviceConfiguration = GetSelectedDeviceConfiguration();
             if (selectedDeviceConfiguration == null) return;
 
-            var viewModel = DataContext as DeviceBindingViewModel;
             viewModel?.ChangeDeviceConfiguration(selectedDeviceConfiguration.Guid);
             LoadContextMenu();
+        }
+
+        private void UserControl_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            var viewModel = DataContext as DeviceBindingViewModel;
+            if (viewModel == null || !viewModel.IsCapturingAuxiliaryKey) return;
+
+            // Alt-held keys report as Key.System with the real key in SystemKey; every other key
+            // (including the modifier keys themselves, pressed alone) reports normally via e.Key.
+            var key = e.Key == Key.System ? e.SystemKey : e.Key;
+            if (key == Key.None) return;
+
+            viewModel.SetAuxiliaryKeyboardKeyCode((ushort)System.Windows.Input.KeyInterop.VirtualKeyFromKey(key));
+            e.Handled = true;
+        }
+
+        private void ClearAuxiliaryKeyboardKeyButton_OnClick(object sender, RoutedEventArgs e)
+        {
+            (DataContext as DeviceBindingViewModel)?.ClearAuxiliaryKeyboardKey();
         }
 
         private DeviceConfiguration GetSelectedDeviceConfiguration()
@@ -286,6 +340,21 @@ namespace HidWizards.UCR.Views.Controls
 
         private void BindButton_OnClick(object sender, RoutedEventArgs e)
         {
+            var viewModel = DataContext as DeviceBindingViewModel;
+
+            // Already listening for the key itself -- a click here isn't a second way to start that.
+            if (viewModel != null && viewModel.IsCapturingAuxiliaryKey) return;
+
+            // "Virtual Keyboard" was picked from the device dropdown, which only armed this button
+            // (see DeviceNumberBox_OnSelected) since a ComboBox selection can't reliably grab WPF
+            // keyboard focus. This Click is a real Button click, which WPF always focuses -- that's
+            // what UserControl_PreviewKeyDown's tunnel needs to actually see the next keypress.
+            if (viewModel != null && viewModel.IsAuxiliaryKeyboardArmed)
+            {
+                viewModel.StartCapturingAuxiliaryKey();
+                return;
+            }
+
             try
             {
                 if (DeviceBinding.DeviceIoType.Equals(DeviceIoType.Input))

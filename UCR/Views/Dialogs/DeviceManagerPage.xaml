@@ -10,19 +10,23 @@
              PreviewKeyDown="DeviceManagerWindow_OnPreviewKeyDown">
     <Grid Background="#212121">
         <Grid.RowDefinitions>
-            <RowDefinition Height="32"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <Grid Grid.Row="0" Background="#202020">
+        <Grid Grid.Row="0" Background="#202020" Margin="0 0 0 4">
             <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-            <Button Grid.Column="0" Margin="4 2 8 2" Padding="8 0" Click="Back_OnClick"
+            <Button Grid.Column="0" Margin="4 2 8 2" Padding="8 0" VerticalAlignment="Center" Click="Back_OnClick"
                     Style="{StaticResource MaterialDesignFlatButton}" ToolTip="Back to profiles">
                 <StackPanel Orientation="Horizontal">
                     <materialDesign:PackIcon Kind="ArrowLeft" Width="18" Height="18" Margin="0 0 5 0"/>
                     <TextBlock Text="BACK" FontWeight="SemiBold" VerticalAlignment="Center"/>
                 </StackPanel>
             </Button>
-            <TextBlock Grid.Column="1" Text="Devices" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center"/>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                <TextBlock Text="Devices" FontSize="17" FontWeight="SemiBold"/>
+                <TextBlock Text="Every device UCR knows about — both inputs you map from and outputs you map to. Rename, hide, remove or reorder below."
+                           FontSize="11.5" Foreground="#B0B0B0" TextWrapping="Wrap"/>
+            </StackPanel>
         </Grid>
         <Grid Grid.Row="1" Margin="18" Background="#212121">
         <Grid.RowDefinitions>
@@ -148,7 +152,11 @@
                             <StackPanel Grid.Column="1" Margin="0 0 12 0">
                                 <TextBlock Text="{Binding ProviderDeviceName}" Foreground="#FFFFFF" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" ToolTip="{Binding ProviderDeviceName}"/>
                                 <TextBlock Text="{Binding ProviderName}" Foreground="#D0D0D0" FontSize="13" Opacity="0.72" TextTrimming="CharacterEllipsis"/>
-                                <TextBlock Text="{Binding IoTypes}" Foreground="#D0D0D0" FontSize="13" Opacity="0.72"/>
+                                <Border Background="#2E2E2E" BorderBrush="#4A4A4A" BorderThickness="1" CornerRadius="3"
+                                        Padding="6 1" Margin="0 3 0 0" HorizontalAlignment="Left"
+                                        ToolTip="Whether this device is used as an input (mapped from), an output (mapped to), or both">
+                                    <TextBlock Text="{Binding IoTypes}" Foreground="{DynamicResource PrimaryHueMidBrush}" FontSize="11" FontWeight="Bold"/>
+                                </Border>
                             </StackPanel>
 
                             <Grid Grid.Column="2" Margin="0 0 12 0">

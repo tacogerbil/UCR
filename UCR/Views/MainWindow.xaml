@@ -126,9 +126,12 @@
                     <Button IsEnabled="{Binding Dashboard.CanDeactivateProfile}" ToolTip="Stop active profile" Command="{Binding DeactivateProfileCommand}" Margin="0,0,8,0">
                         <materialDesign:PackIcon Kind="Stop"/>
                     </Button>
+                    <Button ToolTip="Manage profiles" Command="{Binding ManageProfilesCommand}" Margin="0,0,4,0">
+                        <materialDesign:PackIcon Kind="AccountMultiple"/>
+                    </Button>
 
                     <Separator Margin="8,0" />
-                    
+
                     <Button ToolTip="Import / Export" Command="{Binding ImportExportCommand}" Margin="0,0,4,0">
                         <materialDesign:PackIcon Kind="FileExport"/>
                     </Button>
@@ -146,6 +149,8 @@
                                 <Separator/>
                                 <MenuItem Header="Help" Click="Help_OnClick"/>
                                 <MenuItem Header="About" Click="About_OnClick"/>
+                                <Separator/>
+                                <MenuItem Header="Exit UCR" Click="Exit_OnClick"/>
                             </ContextMenu>
                         </Button.ContextMenu>
                     </Button>

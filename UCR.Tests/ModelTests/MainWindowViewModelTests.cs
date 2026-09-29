@@ -78,6 +78,32 @@ namespace HidWizards.UCR.Tests.ModelTests
         }
 
         [Test]
+        public void ExecuteClone_KeepingAnExistingRuleUnedited_DoesNotShareItWithTheSourceProfile()
+        {
+            // Matches the real dialog flow: opening ProfileEditDialogViewModel copies the source
+            // profile's existing rules into its own ObservableCollection by reference (see its
+            // constructor), then the user adds one more rule for the new game without touching the
+            // old one -- that untouched rule instance is what gets handed to ExecuteClone here.
+            var existingRule = new ProfileApplicationRule(@"C:\shared-game.exe");
+            _profile.AutoActivateApplications.Add(existingRule);
+            var dialogRules = new List<ProfileApplicationRule>
+            {
+                existingRule,
+                new ProfileApplicationRule(@"C:\new-game.exe")
+            };
+
+            var clone = _mainWindowViewModel.ExecuteClone(_profile, "Racing Profile Clone", dialogRules);
+
+            var clonedRule = clone.AutoActivateApplications.Single(r => r.Executable == @"C:\shared-game.exe");
+            Assert.That(clonedRule, Is.Not.SameAs(existingRule),
+                "the clone must own an independent copy, not the same mutable rule the source profile still references");
+
+            clonedRule.Executable = @"C:\edited-on-clone.exe";
+            Assert.That(_profile.AutoActivateApplications.Single().Executable, Is.EqualTo(@"C:\shared-game.exe"),
+                "editing the clone's rule must not bleed back into the source profile's own rule");
+        }
+
+        [Test]
         public void ExecuteClone_RefreshesProfileList()
         {
             var result = _mainWindowViewModel.ExecuteClone(_profile, "Racing Profile Clone", new List<ProfileApplicationRule>());

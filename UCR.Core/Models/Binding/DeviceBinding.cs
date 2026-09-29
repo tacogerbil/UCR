@@ -47,6 +47,15 @@ namespace HidWizards.UCR.Core.Models.Binding
         [XmlAttribute]
         [DefaultValue(false)]
         public bool InvertInput { get; set; }
+        // Optional, independent of whichever remapper plugin this row uses (Button to Button, Axis to
+        // Axis, ...): while this input is held, also send this key via SendInput, in addition to
+        // whatever the row's own plugin does with the same press. Lives here rather than on any plugin
+        // because it's a property of the physical binding itself, not of a specific remapper -- the
+        // Advanced panel's "Virtual Keyboard" device-picker entry sets this instead of a real
+        // DeviceConfigurationGuid. 0 = not configured.
+        [XmlAttribute]
+        [DefaultValue((ushort)0)]
+        public ushort AuxiliaryKeyboardKeyCode { get; set; }
 
         /* Runtime */
         [XmlIgnore]
@@ -299,6 +308,23 @@ namespace HidWizards.UCR.Core.Models.Binding
 
             CurrentValue = value;
             _callback(value);
+
+            SendAuxiliaryKeyboardKeyIfConfigured(value);
+        }
+
+        private bool _auxiliaryKeyDown;
+
+        private void SendAuxiliaryKeyboardKeyIfConfigured(short value)
+        {
+            if (AuxiliaryKeyboardKeyCode == 0) return;
+            // Scoped to buttons: a momentary press/release maps cleanly to a key down/up. An axis
+            // crossing some arbitrary threshold does not, and isn't what this feature was asked for.
+            if (DeviceBindingCategory != DeviceBindingCategory.Momentary) return;
+
+            var down = value != 0;
+            if (down == _auxiliaryKeyDown) return;
+            _auxiliaryKeyDown = down;
+            NativeKeyboardInput.SendKey(AuxiliaryKeyboardKeyCode, down);
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

@@ -48,6 +48,7 @@ namespace HidWizards.UCR.Views
         private Forms.ToolStripMenuItem _stopCurrentProfileMenuItem;
         private readonly AutoProfileMonitor _autoProfileMonitor;
         private bool _exitRequested;
+        private DispatcherTimer _deviceChangeDebounceTimer;
         enum CloseState
         {
             None,
@@ -67,7 +68,7 @@ namespace HidWizards.UCR.Views
 
             // Selecting a device/group on the Devices tab is now what drives the Mapping scope
             // (replaces the old toolbar Input Scope dropdown).
-            devicesViewModel.ScopeSelectionChanged = scope => _mainWindowViewModel.Dashboard.SelectedInputScope = scope;
+            devicesViewModel.ScopeSelectionChanged = scope => _mainWindowViewModel.Dashboard.SelectScopeForAssociationOnly(scope);
             devicesViewModel.RequestChooseProfile = ShowSelectProfileDialog;
             devicesViewModel.RequestEditProfile = profile => _mainWindowViewModel.EditProfileByGuid(profile.Guid);
 
@@ -320,7 +321,28 @@ namespace HidWizards.UCR.Views
         {
             if (msg == NativeMethods.WM_DEVICECHANGE)
             {
-                Context?.InvokeDeviceListChanged();
+                // Windows fires WM_DEVICECHANGE once per sub-interface, so a single composite USB
+                // device (e.g. a wheel + pedals + base reporting as one arrival) can raise several of
+                // these in a burst. Debounce into one actual refresh rather than re-enumerating every
+                // provider's device list per message.
+                //
+                // This used to call Context.InvokeDeviceListChanged() directly, which only raises
+                // Context.DeviceListChangedEvent -- an event nothing in the app subscribes to. The
+                // Devices tab's own list only refreshes via DevicesManager.DeviceListChanged, which is
+                // raised by DevicesManager.RefreshDeviceList() (it also clears the provider device-list
+                // cache and re-queries IOController). Calling that here is what makes a device plugged
+                // in after startup actually show up without restarting the app.
+                _deviceChangeDebounceTimer?.Stop();
+                _deviceChangeDebounceTimer = new DispatcherTimer(DispatcherPriority.Background)
+                {
+                    Interval = TimeSpan.FromMilliseconds(500)
+                };
+                _deviceChangeDebounceTimer.Tick += (s, args) =>
+                {
+                    _deviceChangeDebounceTimer.Stop();
+                    Context?.DevicesManager.RefreshDeviceList();
+                };
+                _deviceChangeDebounceTimer.Start();
             }
 
             if (msg != NativeMethods.WM_COPYDATA) return IntPtr.Zero;
@@ -360,6 +382,15 @@ namespace HidWizards.UCR.Views
         {
             var dialog = new HelpDialog();
             await DialogHost.Show(dialog, "RootDialog");
+        }
+
+        // The titlebar's own close button always minimizes to tray (see MainWindow_OnClosing) --
+        // previously the only way to actually quit was the tray icon's own right-click menu, which
+        // isn't discoverable. This routes through the exact same ExitFromTray path (MainWindow.TrayIcon.cs)
+        // rather than duplicating its shutdown/unsaved-changes handling.
+        private void Exit_OnClick(object sender, RoutedEventArgs e)
+        {
+            ExitFromTray();
         }
     }
 }

@@ -7,6 +7,7 @@
              xmlns:plugin="clr-namespace:HidWizards.UCR.Views.Controls.Plugin"
              d:DesignHeight="160" d:DesignWidth="900"
              UseLayoutRounding="True"
+             PreviewKeyDown="UserControl_PreviewKeyDown"
              mc:Ignorable="d">
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
@@ -168,6 +169,27 @@
             <StackPanel Orientation="Horizontal" Visibility="{Binding ShowInvertInput}" VerticalAlignment="Center">
                 <TextBlock Text="Reverse" VerticalAlignment="Center" Margin="0 0 7 0" FontSize="14" Foreground="#E2E2E2" ToolTip="Reverse this input axis direction"/>
                 <ToggleButton IsChecked="{Binding InvertInput, Mode=TwoWay}" Style="{StaticResource UcrBrightSwitchToggleButton}"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0 2 0 0">
+                <StackPanel.Style>
+                    <Style TargetType="StackPanel">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding HasAuxiliaryKeyboardKey}" Value="True">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </StackPanel.Style>
+                <!-- The key itself now shows directly on BindButtonText, same as every other bound
+                     value in this control; this is just the clear affordance. Explicit Background
+                     (not the style's default) and a PackIcon instead of a raw text glyph so the whole
+                     30x30 button is one hit-test-visible surface, not just wherever the "x" is drawn. -->
+                <Button Click="ClearAuxiliaryKeyboardKeyButton_OnClick" Width="30" Height="30" Padding="0"
+                        Background="Transparent" BorderBrush="Transparent"
+                        Style="{StaticResource MaterialDesignToolButton}" Foreground="Red" ToolTip="Stop also sending this key">
+                    <materialDesign:PackIcon Kind="Close" Width="18" Height="18"/>
+                </Button>
             </StackPanel>
         </StackPanel>
 

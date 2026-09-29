@@ -63,6 +63,7 @@ namespace HidWizards.UCR.ViewModels.Mapping
 
         public ICommand ListenCommand { get; }
         public ICommand ClearCommand { get; }
+        public ICommand UnmergeCommand { get; }
 
         private short _currentValue;
         // Matches DeviceBindingViewModel.GetPreviewValue's existing convention for the same kind of
@@ -104,6 +105,7 @@ namespace HidWizards.UCR.ViewModels.Mapping
 
             ListenCommand = new RelayCommand(ExecuteListen);
             ClearCommand = new RelayCommand(ExecuteClear);
+            UnmergeCommand = new RelayCommand(ExecuteUnmerge);
 
             Plugins = new ObservableCollection<PluginSummaryViewModel>();
             foreach (var plugin in _mapping.Plugins)
@@ -255,6 +257,56 @@ namespace HidWizards.UCR.ViewModels.Mapping
                 OnPropertyChanged(nameof(IsMerged));
                 SubscribeToOutput();
             }
+        }
+
+        // Inverse of SwapToMergerPlugin: discards the second merged input entirely and restores the
+        // row to a plain single-input plugin, keeping the first binding's captured state (the one
+        // that predates the accidental merge). There was previously no way back from a merge once
+        // triggered -- ExecuteListen/ExecuteClear both short-circuit on IsMerged into just expanding
+        // this panel, so this is the only path off that plugin type.
+        private void ExecuteUnmerge(object parameter)
+        {
+            if (!IsMerged) return;
+            UnmergeToSinglePlugin();
+        }
+
+        private void UnmergeToSinglePlugin()
+        {
+            if (_mapping.Plugins.Count == 0) return;
+            var oldPlugin = _mapping.Plugins[0];
+            var primaryBinding = _mapping.DeviceBindings.FirstOrDefault();
+
+            var oldGuid = primaryBinding?.DeviceConfigurationGuid ?? Guid.Empty;
+            var oldType = primaryBinding?.KeyType ?? 0;
+            var oldValue = primaryBinding?.KeyValue ?? 0;
+            var oldSubValue = primaryBinding?.KeySubValue ?? 0;
+            var oldIsBound = primaryBinding?.IsBound ?? false;
+
+            var pluginName = IsAxis ? "Axis to Axis" : "Button to Button";
+            var templatePlugin = _resolvePluginTemplate(pluginName);
+            if (templatePlugin == null) return;
+
+            var newPlugin = _context.PluginManager.GetNewPlugin(templatePlugin);
+
+            _mapping.RemovePlugin(oldPlugin);
+            _mapping.AddPlugin(newPlugin);
+
+            ResolveOutputBinding(newPlugin);
+
+            if (oldIsBound)
+            {
+                _mapping.DeviceBindings[0].SetDeviceConfigurationGuid(oldGuid);
+                _mapping.DeviceBindings[0].SetKeyTypeValue(oldType, oldValue, oldSubValue);
+            }
+
+            Plugins.Clear();
+            Plugins.Add(new PluginSummaryViewModel(newPlugin, _mapping.DeviceBindings));
+
+            _primarySourceDisplayNameOverride = null;
+            OnPropertyChanged(nameof(IsMerged));
+            OnPropertyChanged(nameof(IsBound));
+            OnPropertyChanged(nameof(PrimarySourceDisplayName));
+            SubscribeToOutput();
         }
 
         // Points the plugin's single Output at this row's own slot on the selected Output Device,

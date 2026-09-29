@@ -9,6 +9,7 @@ using System.Windows.Input;
 using HidWizards.UCR.Core;
 using HidWizards.UCR.Core.Models;
 using HidWizards.UCR.Core.Managers;
+using HidWizards.UCR.Core.Utilities;
 using HidWizards.UCR.Utilities.Commands;
 using HidWizards.UCR.ViewModels.Dashboard;
 
@@ -30,6 +31,19 @@ namespace HidWizards.UCR.ViewModels.Devices
         public ICommand AddToGroupCommand { get; }
         public ICommand ChooseProfileCommand { get; }
         public ICommand EditProfileCommand { get; }
+        public ICommand RescanDevicesCommand { get; }
+
+        private bool _isRescanning;
+        public bool IsRescanning
+        {
+            get => _isRescanning;
+            private set
+            {
+                if (_isRescanning == value) return;
+                _isRescanning = value;
+                OnPropertyChanged();
+            }
+        }
 
         // The one device or group currently picked as the Mapping target. Selecting a group's
         // checkmark or exactly one device's checkbox sets this; anything else clears it (see
@@ -90,6 +104,7 @@ namespace HidWizards.UCR.ViewModels.Devices
             AddToGroupCommand = new RelayCommand(ExecuteAddToGroup, _ => SelectedCount > 0);
             ChooseProfileCommand = new RelayCommand(ExecuteChooseProfile, _ => HasSelectedScope);
             EditProfileCommand = new RelayCommand(ExecuteEditProfile, _ => HasAssociatedProfile);
+            RescanDevicesCommand = new RelayCommand(ExecuteRescanDevices, _ => !IsRescanning);
 
             _devicesManager.DeviceListChanged += OnDeviceListChanged;
             _context.DeviceGroupService.DeviceGroupsChanged += OnDeviceGroupsChanged;
@@ -195,6 +210,26 @@ namespace HidWizards.UCR.ViewModels.Devices
         private void OnDeviceListChanged()
         {
             App.Current.Dispatcher.Invoke(() => Populate());
+        }
+
+        // Manual fallback alongside the automatic WM_DEVICECHANGE-driven refresh (MainWindow.xaml.cs) --
+        // useful if a device class doesn't reliably broadcast that message, or the user just wants to
+        // force a re-check without waiting.
+        private void ExecuteRescanDevices(object parameter)
+        {
+            IsRescanning = true;
+            try
+            {
+                _devicesManager.RefreshDeviceList();
+            }
+            catch (Exception exception)
+            {
+                Logger.Error("Manual device rescan failed", exception);
+            }
+            finally
+            {
+                IsRescanning = false;
+            }
         }
         
         private void OnDeviceGroupsChanged()

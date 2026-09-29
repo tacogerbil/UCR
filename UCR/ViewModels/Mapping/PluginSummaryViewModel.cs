@@ -89,10 +89,9 @@ namespace HidWizards.UCR.ViewModels.Mapping
         {
             for (var i = 0; i < Plugin.InputCategories.Count && i < deviceBindings.Count; i++)
             {
-                DeviceBindings.Add(new DeviceBindingViewModel(deviceBindings[i])
+                DeviceBindings.Add(new DeviceBindingViewModel(deviceBindings[i],
+                    Plugin.InputCategories[i].Name, Plugin.InputCategories[i].Category)
                 {
-                    DeviceBindingName = Plugin.InputCategories[i].Name,
-                    DeviceBindingCategory = Plugin.InputCategories[i].Category,
                     PluginPropertyGroup = GetPluginPropertyGroupForOutput(Plugin.InputCategories[i].GroupName)
                 });
             }

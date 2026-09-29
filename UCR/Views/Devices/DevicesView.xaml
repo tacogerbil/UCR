@@ -94,10 +94,17 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="0" Text="DETECTED DEVICES" FontWeight="Bold" FontSize="11" Foreground="{DynamicResource MaterialDesignBodyLight}" VerticalAlignment="Center" />
-                <Button Grid.Column="1" Style="{StaticResource MaterialDesignToolButton}" ToolTip="Manage all devices (rename, hide, remove, reorder)"
-                        Padding="0" Width="24" Height="24" Click="ManageDevices_OnClick">
-                    <materialDesign:PackIcon Kind="Cog" Width="18" Height="18" Foreground="{DynamicResource MaterialDesignBodyLight}" />
-                </Button>
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Style="{StaticResource MaterialDesignToolButton}" ToolTip="Rescan for devices connected after startup"
+                            Padding="0" Width="24" Height="24" Margin="0,0,4,0"
+                            Command="{Binding RescanDevicesCommand}">
+                        <materialDesign:PackIcon Kind="Refresh" Width="18" Height="18" Foreground="{DynamicResource MaterialDesignBodyLight}" />
+                    </Button>
+                    <Button Style="{StaticResource MaterialDesignToolButton}" ToolTip="Manage all devices (rename, hide, remove, reorder)"
+                            Padding="0" Width="24" Height="24" Click="ManageDevices_OnClick">
+                        <materialDesign:PackIcon Kind="Cog" Width="18" Height="18" Foreground="{DynamicResource MaterialDesignBodyLight}" />
+                    </Button>
+                </StackPanel>
             </Grid>
             
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">

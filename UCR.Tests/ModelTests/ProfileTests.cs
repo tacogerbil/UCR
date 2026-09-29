@@ -125,6 +125,30 @@ namespace HidWizards.UCR.Tests.ModelTests
         }
 
         [Test]
+        public void ChangeDeviceConfiguration_DoesNotClearAuxiliaryKeyboardKey()
+        {
+            var first = new DeviceConfiguration(new Device("Wheel", "Core_Interception", "wheel-a", 0));
+            var second = new DeviceConfiguration(new Device("Pedals", "Core_Interception", "pedals-a", 1));
+            _profile.AddDeviceConfigurations(new List<DeviceConfiguration> { first, second }, DeviceIoType.Input);
+
+            var binding = new DeviceBinding(value => { }, _profile, DeviceIoType.Input)
+            {
+                DeviceBindingCategory = DeviceBindingCategory.Momentary
+            };
+            // Never explicitly bound (IsBound stays false) -- this is the state a fresh Patch Bay row's
+            // "Virtual Keyboard" capture happens against, matching the reported repro.
+            binding.AuxiliaryKeyboardKeyCode = 38; // VK_UP
+            var viewModel = new DeviceBindingViewModel(binding, "Button", DeviceBindingCategory.Momentary);
+
+            viewModel.ChangeDeviceConfiguration(second.Guid);
+
+            Assert.That(binding.AuxiliaryKeyboardKeyCode, Is.EqualTo((ushort)38),
+                "Switching the real device picker must not discard an unrelated auxiliary keyboard key.");
+            Assert.That(viewModel.HasAuxiliaryKeyboardKey, Is.True);
+            viewModel.Dispose();
+        }
+
+        [Test]
         public void GuiInvalidationIsConsumedAfterOneRefresh()
         {
             var binding = new DeviceBinding(value => { }, _profile, DeviceIoType.Input)

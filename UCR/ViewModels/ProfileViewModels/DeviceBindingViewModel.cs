@@ -11,11 +11,18 @@ using HidWizards.UCR.Core.Models;
 using HidWizards.UCR.Core.Models.Binding;
 using HidWizards.UCR.Core.Utilities;
 using HidWizards.UCR.ViewModels.Presentation;
+using KeyInterop = System.Windows.Input.KeyInterop;
 
 namespace HidWizards.UCR.ViewModels.ProfileViewModels
 {
     public class DeviceBindingViewModel : INotifyPropertyChanged, IDisposable
     {
+        // A pseudo-entry appended to Devices for Momentary input bindings, alongside real device
+        // configurations -- selecting it never resolves to a real DeviceConfiguration (there isn't
+        // one), it starts DeviceBinding.AuxiliaryKeyboardKeyCode capture instead. Fixed and distinct
+        // from Guid.Empty (already used for "no device"/unavailable).
+        public static readonly Guid VirtualKeyboardSentinelGuid = new Guid("6B195B0E-1B6B-4B6E-9B1A-56B1F5D0C6F1");
+
         public string DeviceBindingName { get; set; }
         public string IoTypeName => DeviceBinding.DeviceIoType.Equals(DeviceIoType.Input) ? "Input" : "Output";
         public DeviceBindingCategory DeviceBindingCategory { get; set; }
@@ -90,10 +97,88 @@ namespace HidWizards.UCR.ViewModels.ProfileViewModels
         {
             get
             {
+                if (IsCapturingAuxiliaryKey) return "Press a key to send…";
+                if (IsAuxiliaryKeyboardArmed) return "Click to capture key";
+
                 if (DeviceBinding.IsInBindMode) return "Press input device";
-                if (DeviceBinding.IsBound) return DeviceBinding.BoundName();
-                return "Click to bind";
+                if (DeviceBinding.IsBound)
+                {
+                    var boundName = DeviceBinding.BoundName();
+                    return HasAuxiliaryKeyboardKey ? $"{boundName} + ⌨ {AuxiliaryKeyboardKeyName}" : boundName;
+                }
+                // Unbound: showing "Click to bind" alongside an already-captured key reads as if the
+                // key itself weren't bound yet. It is -- just show it, the same way a bound physical
+                // input's name replaces "Click to bind" entirely rather than appending to it.
+                return HasAuxiliaryKeyboardKey ? $"⌨ {AuxiliaryKeyboardKeyName}" : "Click to bind";
             }
+        }
+
+        // Offered only for Momentary input bindings -- an axis crossing some threshold doesn't map
+        // cleanly to a key down/up, and that's not what this feature was asked for.
+        public bool ShowVirtualKeyboardOption => DeviceBinding.DeviceIoType == DeviceIoType.Input
+            && DeviceBindingCategory == DeviceBindingCategory.Momentary;
+
+        // Two steps, deliberately not one: picking "Virtual Keyboard" from the dropdown only arms the
+        // button (IsAuxiliaryKeyboardArmed) -- it can't itself grab WPF keyboard focus reliably (a
+        // ComboBox selection leaves focus on the ComboBox, or nowhere, once its dropdown Popup closes).
+        // Actually starting capture (IsCapturingAuxiliaryKey) happens from BindButton's own Click,
+        // which WPF focuses automatically -- the same reliable mechanism KeyCaptureControl's
+        // click-then-press gesture already relies on.
+        public bool IsAuxiliaryKeyboardArmed { get; private set; }
+        public bool IsCapturingAuxiliaryKey { get; private set; }
+
+        public ushort AuxiliaryKeyboardKeyCode => DeviceBinding.AuxiliaryKeyboardKeyCode;
+        public bool HasAuxiliaryKeyboardKey => AuxiliaryKeyboardKeyCode != 0;
+        public string AuxiliaryKeyboardKeyName => HasAuxiliaryKeyboardKey
+            ? KeyInterop.KeyFromVirtualKey(AuxiliaryKeyboardKeyCode).ToString()
+            : null;
+
+        // Selecting the "Virtual Keyboard" pseudo-entry doesn't resolve to a real DeviceConfiguration
+        // (ChangeDeviceConfiguration would just no-op), so the code-behind calls this instead of that.
+        public void BeginCapturingAuxiliaryKey()
+        {
+            IsAuxiliaryKeyboardArmed = true;
+            OnPropertyChanged(nameof(IsAuxiliaryKeyboardArmed));
+            OnPropertyChanged(nameof(BindButtonText));
+        }
+
+        // Called from BindButton's Click while armed -- this is the moment that actually needs
+        // keyboard focus, and a Button.Click reliably has it.
+        public void StartCapturingAuxiliaryKey()
+        {
+            IsAuxiliaryKeyboardArmed = false;
+            IsCapturingAuxiliaryKey = true;
+            OnPropertyChanged(nameof(IsAuxiliaryKeyboardArmed));
+            OnPropertyChanged(nameof(IsCapturingAuxiliaryKey));
+            OnPropertyChanged(nameof(BindButtonText));
+        }
+
+        public void CancelCapturingAuxiliaryKey()
+        {
+            if (!IsAuxiliaryKeyboardArmed && !IsCapturingAuxiliaryKey) return;
+            IsAuxiliaryKeyboardArmed = false;
+            IsCapturingAuxiliaryKey = false;
+            OnPropertyChanged(nameof(IsAuxiliaryKeyboardArmed));
+            OnPropertyChanged(nameof(IsCapturingAuxiliaryKey));
+            OnPropertyChanged(nameof(BindButtonText));
+        }
+
+        public void SetAuxiliaryKeyboardKeyCode(ushort keyCode)
+        {
+            DeviceBinding.AuxiliaryKeyboardKeyCode = keyCode;
+            IsAuxiliaryKeyboardArmed = false;
+            IsCapturingAuxiliaryKey = false;
+            OnPropertyChanged(nameof(IsAuxiliaryKeyboardArmed));
+            OnPropertyChanged(nameof(IsCapturingAuxiliaryKey));
+            OnPropertyChanged(nameof(BindButtonText));
+            OnPropertyChanged(nameof(AuxiliaryKeyboardKeyCode));
+            OnPropertyChanged(nameof(HasAuxiliaryKeyboardKey));
+            OnPropertyChanged(nameof(AuxiliaryKeyboardKeyName));
+        }
+
+        public void ClearAuxiliaryKeyboardKey()
+        {
+            SetAuxiliaryKeyboardKeyCode(0);
         }
 
         private DeviceBinding _deviceBinding;
@@ -137,12 +222,26 @@ namespace HidWizards.UCR.ViewModels.ProfileViewModels
             }
         }
 
-        public DeviceBindingViewModel(DeviceBinding deviceBinding)
+        public DeviceBindingViewModel(DeviceBinding deviceBinding, string deviceBindingName = null,
+            DeviceBindingCategory? deviceBindingCategory = null)
         {
             DeviceBinding = deviceBinding;
-            deviceBinding.Profile.Context.SubscriptionsManager.PropertyChanged += SubscriptionsManagerOnPropertyChanged;
+            // Must be set before LoadDeviceInputs() below, since ShowVirtualKeyboardOption reads
+            // DeviceBindingCategory -- a caller-supplied object initializer (`new
+            // DeviceBindingViewModel(x) { DeviceBindingCategory = ... }`) only assigns it *after* the
+            // constructor returns, which is too late for that first LoadDeviceInputs() call.
+            if (deviceBindingName != null) DeviceBindingName = deviceBindingName;
+            if (deviceBindingCategory.HasValue) DeviceBindingCategory = deviceBindingCategory.Value;
+
             deviceBinding.Profile.Context.DeviceAliasesChangedEvent += ContextOnDeviceAliasesChanged;
-            BindingEnabled = !DeviceBinding.Profile.Context.SubscriptionsManager.ProfileActive;
+            // Previously false whenever SubscriptionsManager.ProfileActive was true -- but Begin
+            // Mapping always activates the profile just to reach this screen at all (see
+            // DashboardViewModel.ApplyAssociatedProfileForCurrentScope), so that made this control
+            // permanently disabled the entire time it's visible. Rebinding while active is already
+            // safe: DeviceBinding.SetKeyTypeValue/ClearBinding already call
+            // RefreshSubscriptionsIfActive (session 16), the same way the Patch Bay row's own Listen
+            // button -- which was never gated this way -- has always worked.
+            BindingEnabled = true;
 
             LoadDeviceInputs();
         }
@@ -169,6 +268,19 @@ namespace HidWizards.UCR.ViewModels.ProfileViewModels
                     deviceConfiguration.GetFullTitleForProfile(DeviceBinding.Profile),
                     deviceConfiguration.Guid,
                     DeviceVisualCatalog.Describe(deviceConfiguration, DeviceBinding.Profile, DeviceBinding.DeviceIoType)));
+            }
+
+            if (ShowVirtualKeyboardOption)
+            {
+                Devices.Add(new ComboBoxItemViewModel("Virtual Keyboard", VirtualKeyboardSentinelGuid,
+                    new DeviceVisualDescriptor
+                    {
+                        Kind = DeviceVisualKind.Keyboard,
+                        BadgeText = "VK",
+                        AccentBrush = DeviceVisualCatalog.NeutralBrush,
+                        OutlineBrush = DeviceVisualCatalog.NeutralBrush,
+                        ToolTip = "Send an emulated key press while this input is held, in addition to its normal binding"
+                    }));
             }
 
             SetSelectDevice();
@@ -355,15 +467,6 @@ namespace HidWizards.UCR.ViewModels.ProfileViewModels
             BindModeProgress = bindingManager.BindModeProgress;
         }
 
-        private void SubscriptionsManagerOnPropertyChanged(object sender, PropertyChangedEventArgs propertyChangedEventArgs)
-        {
-            if (propertyChangedEventArgs.PropertyName.Equals("ProfileActive"))
-            {
-                BindingEnabled = !DeviceBinding.Profile.Context.SubscriptionsManager.ProfileActive;
-            }
-        }
-
-
         public void Dispose()
         {
             if (_disposed) return;
@@ -377,7 +480,6 @@ namespace HidWizards.UCR.ViewModels.ProfileViewModels
                 if (context != null)
                 {
                     context.BindingManager.PropertyChanged -= BindingManagerOnPropertyChanged;
-                    context.SubscriptionsManager.PropertyChanged -= SubscriptionsManagerOnPropertyChanged;
                     context.DeviceAliasesChangedEvent -= ContextOnDeviceAliasesChanged;
                 }
             }

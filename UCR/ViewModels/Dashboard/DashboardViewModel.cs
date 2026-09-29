@@ -32,6 +32,15 @@ namespace HidWizards.UCR.ViewModels.Dashboard
             get => _selectedProfileItem;
             set
             {
+                // Reassigning the same ProfileItem must be a no-op, mirroring SelectedInputScope's own
+                // guard: MainWindow.xaml.cs's PropertyChanged handler calls PatchBayViewModel.SetProfile
+                // on every raise of this property, which fully tears down and rebuilds Rows/
+                // FilterProducers/KeyboardShortcuts. Without this guard, anything that re-points at the
+                // *current* profile (e.g. ApplyAssociatedProfileForCurrentScope re-resolving the same
+                // scope) silently wipes any not-yet-persisted row in that rebuild -- e.g. a "Button to
+                // Filter" mapping whose FilterName is still blank fails PopulateFilterProducers's
+                // GetDefinedFilterName() != null check and simply disappears.
+                if (ReferenceEquals(_selectedProfileItem, value)) return;
                 _selectedProfileItem = value;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(ProfileDetailsActive));
@@ -54,18 +63,35 @@ namespace HidWizards.UCR.ViewModels.Dashboard
         public InputScopeItem SelectedInputScope
         {
             get => _selectedInputScope;
-            set
-            {
-                if (_selectedInputScope == value) return;
-                _selectedInputScope = value;
-                OnPropertyChanged();
-                CommandManager.InvalidateRequerySuggested();
+            // Once Mapping is already unlocked, a scope change from the selector on the Mapping tab
+            // itself should immediately re-point at that scope's own profile -- mirrors
+            // ExecuteBeginMapping's own resolution, see below. Devices-tab scope selection
+            // (SelectScopeForAssociationOnly) deliberately does NOT go through this: checking a
+            // device/group checkbox there is just picking which scope you're viewing/associating a
+            // profile for, not asking to start routing real input/output for it.
+            set => SetSelectedInputScope(value, IsMappingUnlocked);
+        }
 
-                // Once Mapping is already unlocked, a scope change (e.g. from the selector on the
-                // Mapping tab itself, not just the Devices tab) should immediately re-point at that
-                // scope's own profile — mirrors ExecuteBeginMapping's own resolution, see below.
-                if (IsMappingUnlocked) ApplyAssociatedProfileForCurrentScope();
-            }
+        // Devices tab entry point (MainWindow.xaml.cs's DevicesViewModel.ScopeSelectionChanged wiring):
+        // picking a scope there must never silently activate its associated profile's output device.
+        // Only an explicit "start" -- Begin Mapping (ExecuteBeginMapping), or reselecting the scope from
+        // the Mapping tab's own selector once already unlocked (the property setter above) -- should.
+        // Before this existed, re-checking a Devices-tab checkbox after Begin Mapping had ever been
+        // pressed once in the session (IsMappingUnlocked stays true for the rest of the session by
+        // design) silently reconnected the ViGEm controller with no "Start" action in sight.
+        public void SelectScopeForAssociationOnly(InputScopeItem scope)
+        {
+            SetSelectedInputScope(scope, resolveAssociatedProfile: false);
+        }
+
+        private void SetSelectedInputScope(InputScopeItem value, bool resolveAssociatedProfile)
+        {
+            if (_selectedInputScope == value) return;
+            _selectedInputScope = value;
+            OnPropertyChanged(nameof(SelectedInputScope));
+            CommandManager.InvalidateRequerySuggested();
+
+            if (resolveAssociatedProfile) ApplyAssociatedProfileForCurrentScope();
         }
 
         // The Mapping tab stays hidden until the user has picked an Input Scope (a single device or
@@ -267,18 +293,34 @@ namespace HidWizards.UCR.ViewModels.Dashboard
                 InputSources.Add(new InputScopeItem(group.Guid.ToString(), group.Title, true, group.MemberDeviceIdentities));
             }
 
-            // Restore selection if possible
+            // Restore selection if possible. This re-points at the same logical scope after a
+            // device-list rebuild (InputSources.Clear() above always produces new InputScopeItem
+            // instances) -- it is bookkeeping, not a user-driven scope change, so it must NOT go
+            // through the SelectedInputScope setter: that setter calls ApplyAssociatedProfileForCurrentScope
+            // whenever IsMappingUnlocked is true, and InputScopeItem has no value equality, so the
+            // setter's reference-equality no-op guard never catches "same scope, new instance" here.
+            // Left as the public setter, an unrelated device-list refresh (including the one caused by
+            // Stop itself disconnecting the ViGEm output, which Windows reports as a device change)
+            // would silently re-activate the profile and reconnect the very output the user just
+            // stopped -- see project notes for this bug for the full repro chain.
             if (oldSelectedId != null)
             {
                 foreach (var item in InputSources)
                 {
                     if (item.Id == oldSelectedId)
                     {
-                        SelectedInputScope = item;
+                        RestoreSelectedInputScope(item);
                         break;
                     }
                 }
             }
+        }
+
+        private void RestoreSelectedInputScope(InputScopeItem item)
+        {
+            _selectedInputScope = item;
+            OnPropertyChanged(nameof(SelectedInputScope));
+            CommandManager.InvalidateRequerySuggested();
         }
 
         public void ReplaceProfileList(ObservableCollection<ProfileItem> profileList)

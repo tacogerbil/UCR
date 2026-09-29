@@ -5,6 +5,7 @@ using HidWizards.UCR.Core;
 using HidWizards.UCR.Core.Models;
 using HidWizards.UCR.Core.Models.Binding;
 using HidWizards.UCR.Plugins.Filter;
+using HidWizards.UCR.Plugins.Keyboard;
 using HidWizards.UCR.ViewModels.Mapping;
 using NUnit.Framework;
 
@@ -115,6 +116,7 @@ namespace HidWizards.UCR.Tests.ModelTests
             {
                 case "Button to Filter": return new ButtonToFilter();
                 case "Axis to Filter": return new AxisToFilter();
+                case "Button to Keyboard Key": return new ButtonToKeyboardKey();
                 default: return null;
             }
         }
@@ -182,6 +184,87 @@ namespace HidWizards.UCR.Tests.ModelTests
 
             Assert.That(patchBay.Rows.Count, Is.EqualTo(2));
             Assert.That(patchBay.FilterProducers, Is.Empty);
+        }
+
+        [Test]
+        public void AddKeyboardShortcutCommand_CreatesAKeyboardShortcut_NotAPatchBayRow()
+        {
+            var patchBay = new PatchBayViewModel(_context, ResolveFilterTemplate);
+            patchBay.SetProfile(_profile);
+
+            patchBay.AddKeyboardShortcutCommand.Execute(null);
+
+            Assert.That(patchBay.KeyboardShortcuts.Count, Is.EqualTo(1));
+            Assert.That(patchBay.Rows.Count, Is.EqualTo(0), "a keyboard shortcut must never render as an output-slot row");
+            Assert.That(_profile.Mappings, Has.Count.EqualTo(1));
+            Assert.That(_profile.Mappings[0].TargetOutputKey, Is.Null.Or.Empty);
+        }
+
+        [Test]
+        public void KeyboardShortcutRow_KeyCode_RoundTripsThroughThePlugin()
+        {
+            var patchBay = new PatchBayViewModel(_context, ResolveFilterTemplate);
+            patchBay.SetProfile(_profile);
+            patchBay.AddKeyboardShortcutCommand.Execute(null);
+            var row = patchBay.KeyboardShortcuts.Single();
+
+            row.KeyCode = 13; // VK_RETURN
+
+            Assert.That(row.KeyCode, Is.EqualTo(13));
+            Assert.That(((ButtonToKeyboardKey)_profile.Mappings[0].Plugins[0]).KeyCode, Is.EqualTo(13));
+        }
+
+        [Test]
+        public void RemoveCommand_OnAKeyboardShortcut_RemovesItFromProfileAndFromTheList()
+        {
+            var patchBay = new PatchBayViewModel(_context, ResolveFilterTemplate);
+            patchBay.SetProfile(_profile);
+            patchBay.AddKeyboardShortcutCommand.Execute(null);
+            var shortcut = patchBay.KeyboardShortcuts.Single();
+
+            shortcut.RemoveCommand.Execute(null);
+
+            Assert.That(patchBay.KeyboardShortcuts, Is.Empty);
+            Assert.That(_profile.Mappings, Is.Empty);
+        }
+
+        [Test]
+        public void SetProfile_PopulatesKeyboardShortcuts_FromMappingsAlreadySavedOnTheProfile()
+        {
+            var mapping = new Mapping(_profile, "Button to Keyboard Key");
+            _profile.Mappings.Add(mapping);
+            mapping.AddPlugin(new ButtonToKeyboardKey { KeyCode = 13 });
+
+            var patchBay = new PatchBayViewModel(_context, ResolveFilterTemplate);
+            patchBay.SetProfile(_profile);
+
+            Assert.That(patchBay.KeyboardShortcuts.Count, Is.EqualTo(1));
+            Assert.That(patchBay.KeyboardShortcuts[0].KeyCode, Is.EqualTo(13));
+        }
+
+        [Test]
+        public void SetProfile_DoesNotTreatAPatchBayRowMappingAsAKeyboardShortcut()
+        {
+            var deviceConfig = new DeviceConfiguration(CreateOutputDevice("Core_ViGEm", "xb360", TwoSlotMenu(0)));
+            var patchBay = new PatchBayViewModel(_context, ResolveFilterTemplate);
+            patchBay.SetProfile(_profile);
+            patchBay.SelectedOutputDeviceConfiguration = deviceConfig;
+
+            Assert.That(patchBay.Rows.Count, Is.EqualTo(2));
+            Assert.That(patchBay.KeyboardShortcuts, Is.Empty);
+        }
+
+        [Test]
+        public void FilterProducerAndKeyboardShortcut_DoNotMisidentifyEachOther()
+        {
+            var patchBay = new PatchBayViewModel(_context, ResolveFilterTemplate);
+            patchBay.SetProfile(_profile);
+
+            patchBay.AddButtonFilterCommand.Execute(null);
+            patchBay.AddKeyboardShortcutCommand.Execute(null);
+
+            Assert.That(patchBay.FilterProducers.Count, Is.EqualTo(1));
+            Assert.That(patchBay.KeyboardShortcuts.Count, Is.EqualTo(1));
         }
     }
 }

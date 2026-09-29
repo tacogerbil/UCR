@@ -161,5 +161,49 @@ namespace HidWizards.UCR.Tests.ModelTests
 
             Assert.That(mapping.DeviceBindings.Count, Is.EqualTo(2));
         }
+
+        [Test]
+        public void Unmerge_OnMergedAxisRow_RestoresFirstInputAsPlainAxisToAxis()
+        {
+            var row = CreateRow(AxisSlot);
+            var mapping = _profile.Mappings[0];
+
+            var firstBinding = row.GetOrCreateNextBinding();
+            var firstInputGuid = Guid.NewGuid();
+            firstBinding.SetDeviceConfigurationGuid(firstInputGuid);
+            firstBinding.SetKeyTypeValue(9, 1, 0);
+
+            row.GetOrCreateNextBinding(); // triggers the merge swap
+            Assert.That(row.IsMerged, Is.True);
+
+            row.UnmergeCommand.Execute(null);
+
+            Assert.That(row.IsMerged, Is.False);
+            Assert.That(mapping.Plugins.Count, Is.EqualTo(1));
+            Assert.That(mapping.Plugins[0], Is.InstanceOf<AxisToAxis>());
+
+            Assert.That(mapping.DeviceBindings.Count, Is.EqualTo(1));
+            Assert.That(mapping.DeviceBindings[0].DeviceConfigurationGuid, Is.EqualTo(firstInputGuid));
+            Assert.That(mapping.DeviceBindings[0].KeyType, Is.EqualTo(9));
+            Assert.That(mapping.DeviceBindings[0].IsBound, Is.True);
+
+            var output = mapping.Plugins[0].Outputs[0];
+            Assert.That(output.DeviceConfigurationGuid, Is.EqualTo(_outputDeviceGuid));
+            Assert.That(output.KeyType, Is.EqualTo(AxisSlot.KeyType));
+            Assert.That(output.IsBound, Is.True);
+        }
+
+        [Test]
+        public void Unmerge_WhenNotMerged_DoesNothing()
+        {
+            var row = CreateRow(AxisSlot);
+            var mapping = _profile.Mappings[0];
+            row.GetOrCreateNextBinding();
+
+            row.UnmergeCommand.Execute(null);
+
+            Assert.That(mapping.Plugins[0], Is.InstanceOf<AxisToAxis>());
+            Assert.That(mapping.DeviceBindings.Count, Is.EqualTo(1));
+        }
     }
 }

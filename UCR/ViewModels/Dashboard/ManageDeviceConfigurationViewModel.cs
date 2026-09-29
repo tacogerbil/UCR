@@ -25,6 +25,10 @@ namespace HidWizards.UCR.ViewModels.Dashboard
         public string DeviceConfigurationName { get; set; }
 
         public DeviceAddRemoveControlViewModel ShadowDevices { get; set; }
+        public string ShadowDevicesHeading => "Shadow devices";
+        public string ShadowDevicesHelp => _deviceIoType == DeviceIoType.Input
+            ? "Optional: have this same mapping also read from other identical physical devices below (e.g. a second matching controller for a second player), without building a separate mapping for each one. Leave empty if you only have one of this device — that's the normal case."
+            : "Optional: also send this same mapping's output to other output devices of the same type below (e.g. mirror to a second Xbox 360 pad), in addition to this one. Leave empty to send to only this device — that's the normal case, and \"no available devices\" here just means you don't have another device of this exact type to add.";
         public ManageDeviceConfigurationViewModel ViewModel { get; set; }
 
         public bool HasChanged => _changed;

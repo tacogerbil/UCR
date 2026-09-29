@@ -177,6 +177,27 @@ namespace HidWizards.UCR.Core.Models
             return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
         }
 
+        // Mirrors GetDefinedFilterName()'s reflection-based pattern for the same reason: UCR (the WPF
+        // layer) has no compile-time reference to UCR.Plugins, so it can never type-check against a
+        // concrete plugin class like ButtonToKeyboardKey directly -- only against the generic Plugin
+        // base type, using Group/PluginName plus reflection for anything plugin-specific.
+        public bool IsKeyboardKeyProducer => string.Equals(Group, "Keyboard", StringComparison.OrdinalIgnoreCase);
+
+        public ushort GetKeyboardKeyCode()
+        {
+            if (!IsKeyboardKeyProducer) return 0;
+            var property = GetType().GetProperty("KeyCode", BindingFlags.Instance | BindingFlags.Public);
+            if (property == null || property.PropertyType != typeof(ushort)) return 0;
+            return (ushort)property.GetValue(this);
+        }
+
+        public void SetKeyboardKeyCode(ushort keyCode)
+        {
+            if (!IsKeyboardKeyProducer) return;
+            var property = GetType().GetProperty("KeyCode", BindingFlags.Instance | BindingFlags.Public);
+            if (property != null && property.PropertyType == typeof(ushort)) property.SetValue(this, keyCode);
+        }
+
         internal void OnFilterDefinitionChanged(string oldName, string newName)
         {
             FilterDefinitionChanged?.Invoke(oldName, newName);

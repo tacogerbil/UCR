@@ -67,7 +67,15 @@ namespace HidWizards.UCR.Core.Managers
 
         public Profile CopyProfile(Profile profile, string title = "Untitled")
         {
+            Logger.Info($"CopyProfile: source '{profile.Title}' has {profile.Mappings.Count} mapping(s), " +
+                        $"{profile.InputDeviceConfigurations.Count} input device config(s), " +
+                        $"{profile.OutputDeviceConfigurations.Count} output device config(s).");
+
             var newProfile = Context.DeepXmlClone<Profile>(profile);
+            Logger.Info($"CopyProfile: after DeepXmlClone, clone has {newProfile.Mappings.Count} mapping(s), " +
+                        $"{newProfile.InputDeviceConfigurations.Count} input device config(s), " +
+                        $"{newProfile.OutputDeviceConfigurations.Count} output device config(s).");
+
             newProfile.Title = title;
             newProfile.PostLoad(_context, profile.ParentProfile);
 
@@ -81,6 +89,15 @@ namespace HidWizards.UCR.Core.Managers
             }
 
             RegenerateIdentities(new[] { newProfile });
+
+            var unresolvedCount = newProfile.Mappings
+                .SelectMany(m => m.DeviceBindings)
+                .Count(b => b.DeviceConfigurationGuid != Guid.Empty &&
+                            newProfile.InputDeviceConfigurations.All(c => c.Guid != b.DeviceConfigurationGuid) &&
+                            newProfile.OutputDeviceConfigurations.All(c => c.Guid != b.DeviceConfigurationGuid));
+            Logger.Info($"CopyProfile: after RegenerateIdentities, clone '{newProfile.Title}' has " +
+                        $"{newProfile.Mappings.Count} mapping(s); {unresolvedCount} input DeviceBinding(s) " +
+                        "could not be matched to any of the clone's own device configs.");
 
             _context.ContextChanged();
 

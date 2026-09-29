@@ -8,6 +8,7 @@ using System.Windows.Input;
 using HidWizards.UCR.Core;
 using HidWizards.UCR.Core.Managers;
 using HidWizards.UCR.Core.Models;
+using HidWizards.UCR.Core.Utilities;
 using HidWizards.UCR.Utilities.Commands;
 using HidWizards.UCR.ViewModels.Dashboard;
 using HidWizards.UCR.ViewModels.Dialogs;
@@ -28,6 +29,7 @@ namespace HidWizards.UCR.ViewModels
         public ICommand ActivateProfileCommand { get; }
         public ICommand DeactivateProfileCommand { get; }
         public ICommand EditProfileCommand { get; }
+        public ICommand ManageProfilesCommand { get; }
         public ICommand ImportExportCommand { get; }
         public ICommand SaveCommand { get; }
 
@@ -43,6 +45,7 @@ namespace HidWizards.UCR.ViewModels
             ActivateProfileCommand = new RelayCommand(ActivateProfile, _ => Dashboard.CanActivateProfile);
             DeactivateProfileCommand = new RelayCommand(DeactivateProfile, _ => Dashboard.CanDeactivateProfile);
             EditProfileCommand = new RelayCommand(EditProfile, _ => Dashboard.SelectedProfileItem != null);
+            ManageProfilesCommand = new RelayCommand(ManageProfiles);
             ImportExportCommand = new RelayCommand(ImportExport);
             SaveCommand = new RelayCommand(Save, _ => _context.IsNotSaved);
 
@@ -55,7 +58,12 @@ namespace HidWizards.UCR.ViewModels
         public void EditProfileByGuid(Guid profileGuid)
         {
             var item = FindProfileItemById(Dashboard.ProfileList, profileGuid);
-            if (item == null) return;
+            if (item == null)
+            {
+                Logger.Warn($"EditProfileByGuid: no ProfileItem found for guid={profileGuid} in " +
+                            $"Dashboard.ProfileList ({Dashboard.ProfileList.Count} top-level item(s)); editor not opened.");
+                return;
+            }
             Dashboard.SelectedProfileItem = item;
             EditProfileCommand.Execute(null);
         }
@@ -118,7 +126,17 @@ namespace HidWizards.UCR.ViewModels
         private async void EditProfile(object parameter)
         {
             if (Dashboard.SelectedProfileItem == null) return;
-            var profile = Dashboard.SelectedProfileItem.Profile;
+            await EditProfileAsync(Dashboard.SelectedProfileItem.Profile);
+        }
+
+        // Manage Profiles (below) needs to open the same editor for a Profile it already has in hand
+        // -- awaiting the result before deciding what to do next -- rather than going through
+        // EditProfileCommand, which only ever reads Dashboard.SelectedProfileItem and can't be awaited
+        // (it's wired as an async void ICommand handler). Extracted so both callers share one
+        // implementation instead of the dialog/result-handling logic existing twice.
+        private async Task EditProfileAsync(Profile profile)
+        {
+            if (profile == null) return;
             var vm = new ProfileEditDialogViewModel(profile);
             var dialog = new ProfileEditDialog(vm);
 
@@ -127,12 +145,14 @@ namespace HidWizards.UCR.ViewModels
             try
             {
                 var result = await DialogHost.Show(dialog, "RootDialog");
+                Logger.Info($"ProfileEditDialog closed with result='{result}' (type={result?.GetType().Name ?? "null"}), IsDirty={vm.IsDirty}.");
 
                 // Every result except Save/Clone discards unsaved changes outright, so confirm first.
                 // Save/Clone is exempt because it's still the vehicle that carries those changes forward.
                 var isSaveOrClone = result is ProfileEditResult.Clone || (result as string) == "Save";
                 if (!isSaveOrClone && vm.IsDirty && !await ConfirmDiscardChanges())
                 {
+                    Logger.Info("User declined to discard unsaved changes; profile edit result discarded.");
                     return;
                 }
 
@@ -144,11 +164,80 @@ namespace HidWizards.UCR.ViewModels
                 {
                     await HandleSaveResult(profile, vm);
                 }
+                else
+                {
+                    Logger.Info("ProfileEditDialog result matched neither ProfileEditResult nor 'Save' string; no action taken.");
+                }
             }
             finally
             {
                 vm.Dispose();
             }
+        }
+
+        // A standalone "list every profile, act on any of them" window -- distinct from the pencil-icon
+        // ProfileEditDialog, which only ever edits whichever ONE profile you already navigated to. This
+        // never duplicates Edit/Delete/Clone logic: it just resolves the row's Guid back to a Profile
+        // via the same ProfileList tree EditProfileByGuid already searches, then hands off to the exact
+        // same EditProfileAsync/ExecuteRemove/ExecuteClone this class already uses elsewhere. The dialog
+        // closes on every row action (DialogHost can only show one dialog at a time, and Edit needs to
+        // show ProfileEditDialog on the same "RootDialog") and reopens afterward so the user lands back
+        // on the list rather than being dropped out of the manager entirely.
+        private async void ManageProfiles(object parameter)
+        {
+            while (true)
+            {
+                var vm = new ProfileManagerDialogViewModel(Dashboard.ProfileList);
+                var dialog = new ProfileManagerDialog(vm);
+                vm.CloseDialogAction = result => DialogHost.CloseDialogCommand.Execute(result, dialog);
+
+                var result = await DialogHost.Show(dialog, "RootDialog") as ProfileManagerResult;
+                if (result == null || result.Action == ProfileManagerAction.Close) return;
+
+                var item = FindProfileItemById(Dashboard.ProfileList, result.ProfileGuid);
+                var profile = item?.Profile;
+                if (profile == null) continue;
+
+                switch (result.Action)
+                {
+                    case ProfileManagerAction.Edit:
+                        await EditProfileAsync(profile);
+                        break;
+                    case ProfileManagerAction.Delete:
+                        await DeleteProfileWithConfirmation(profile);
+                        break;
+                    case ProfileManagerAction.Clone:
+                        await CloneProfileWithPrompt(profile);
+                        break;
+                }
+            }
+        }
+
+        private async Task DeleteProfileWithConfirmation(Profile profile)
+        {
+            var confirmDialog = new BoolDialog("Delete profile", $"Delete '{profile.Title}'? This cannot be undone.");
+            var confirmed = (bool?)await DialogHost.Show(confirmDialog, "RootDialog");
+            if (confirmed != true) return;
+
+            ExecuteRemove(profile);
+        }
+
+        // Mirrors HandleCloneResult's own clone-then-open-editor flow (same StringDialog prompt, same
+        // ExecuteClone call, same "open the new clone's editor immediately" follow-up) -- the only
+        // difference is the caller already holds the Profile directly, so there's no ProfileEditDialogViewModel
+        // edit buffer to read AutoActivateApplications from; the profile's own current rules are copied
+        // instead (ExecuteClone/ApplyAutoActivateRules already copies each rule rather than reusing the
+        // reference, so passing the source profile's own list here is safe).
+        private async Task CloneProfileWithPrompt(Profile profile)
+        {
+            var copyDialog = new StringDialog("Copy profile", "Profile name", profile.Title + " Clone");
+            var cloneResult = (bool?)await DialogHost.Show(copyDialog, "RootDialog");
+            if (cloneResult != true) return;
+
+            var cloned = ExecuteClone(profile, copyDialog.Value, profile.AutoActivateApplications);
+            if (cloned == null) return;
+
+            await EditProfileAsync(cloned);
         }
 
         private async Task<bool> ConfirmDiscardChanges()
@@ -192,7 +281,17 @@ namespace HidWizards.UCR.ViewModels
             var cloneResult = (bool?)await DialogHost.Show(copyDialog, "RootDialog");
             if (cloneResult != true) return;
 
-            ExecuteClone(profile, copyDialog.Value, vm.AutoActivateApplications);
+            var cloned = ExecuteClone(profile, copyDialog.Value, vm.AutoActivateApplications);
+            if (cloned == null) return;
+
+            // Cloning used to just close this dialog and drop the user back exactly where they
+            // started -- the new profile was created (see ExecuteClone/CopyProfile) but nothing on
+            // screen changed, and the only way to ever find it was the "CHOOSE / CREATE PROFILE"
+            // picker on a *different*, not-yet-associated device/group. From the user's side that's
+            // indistinguishable from the button doing nothing. Reopening the editor on the clone
+            // immediately (same pattern HandleAddChildResult already uses for a new child profile)
+            // gives visible confirmation and a direct path to add the new game's .exe rule right away.
+            EditProfileByGuid(cloned.Guid);
         }
 
         // Returns the cloned Profile, or null if newName was blank (nothing to clone into).
@@ -200,9 +299,20 @@ namespace HidWizards.UCR.ViewModels
         {
             if (string.IsNullOrWhiteSpace(newName)) return null;
 
-            var clonedProfile = _context.ProfilesManager.CopyProfile(profile, newName);
+            Profile clonedProfile;
+            try
+            {
+                clonedProfile = _context.ProfilesManager.CopyProfile(profile, newName);
+            }
+            catch (Exception exception)
+            {
+                Logger.Error("CopyProfile threw while cloning '" + profile?.Title + "'.", exception);
+                throw;
+            }
             ApplyAutoActivateRules(clonedProfile, rules);
             ReloadProfileTree();
+            Logger.Info($"ReloadProfileTree done; Context.Profiles now has {_context.Profiles.Count} top-level profile(s); " +
+                        $"Dashboard.ProfileList now has {Dashboard.ProfileList.Count} item(s).");
             return clonedProfile;
         }
 
@@ -293,7 +403,14 @@ namespace HidWizards.UCR.ViewModels
             profile.AutoActivateApplications.Clear();
             foreach (var rule in rules)
             {
-                profile.AutoActivateApplications.Add(rule);
+                // Copy rather than reuse the source rule instance: ExecuteClone passes the edit
+                // dialog's rule list, which (for any rule the user didn't just add) is the same
+                // ProfileApplicationRule object still referenced by the profile being cloned.
+                // ProfileApplicationRule.Attach rebinds its owning Profile on every collection add, so
+                // adding that shared instance here would silently re-home it onto the clone while it
+                // stays in the source's own list too -- both profiles would then be mutating one
+                // object, and editing either profile's game path later would corrupt the other's.
+                profile.AutoActivateApplications.Add(new ProfileApplicationRule(rule.Executable, rule.Arguments));
             }
         }
 
