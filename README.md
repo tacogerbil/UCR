@@ -1,86 +1,82 @@
 <img src="icon.png" align="right" />
 
-test!
+# Universal Control Remapper RELOADED
 
-# Universal Control Remapper
-[![GitHub release](https://img.shields.io/badge/release-v0.9.9z-blue.svg)](https://github.com/Stylish-Dark/UCR/releases/tag/v0.9.9z) [![IOWrapper version](https://img.shields.io/badge/IOWrapper-v0.11.2-blue.svg)](https://github.com/evilC/IOWrapper) [![license](https://img.shields.io/github/license/snoothy/ucr.svg)](https://github.com/Snoothy/UCR/blob/master/LICENSE) [![Github All Releases](https://img.shields.io/github/downloads/snoothy/ucr/total.svg)](https://github.com/Snoothy/UCR/releases) [![AppVeyor](https://ci.appveyor.com/api/projects/status/github/Snoothy/UCR?svg=true)](https://ci.appveyor.com/project/Snoothy/ucr) [![Sonarcloud Status](https://sonarcloud.io/api/project_badges/measure?project=Snoothy_UCR&metric=alert_status)](https://sonarcloud.io/dashboard?id=Snoothy_UCR)
+[![GitHub release](https://img.shields.io/badge/release-v0.9.9z-blue.svg)](https://github.com/Stylish-Dark/UCR/releases/tag/v0.9.9z) [![IOWrapper version](https://img.shields.io/badge/IOWrapper-v0.11.2-blue.svg)](https://github.com/evilC/IOWrapper) [![license](https://img.shields.io/github/license/snoothy/ucr.svg)](https://github.com/Snoothy/UCR/blob/master/LICENSE) [![AppVeyor](https://ci.appveyor.com/api/projects/status/github/Snoothy/UCR?svg=true)](https://ci.appveyor.com/project/Snoothy/ucr)
 
-Universal Control Remapper is a complete rewrite of the original [UCR](https://github.com/evilC/UCR), created in collaboration with [evilC](https://github.com/evilC/).
+Universal Control Remapper RELOADED is a major architectural evolution and total UI overhaul of the original [UCR](https://github.com/Snoothy/UCR). It transforms the legacy, complex nested-tab experience into a fast, intuitive "Patch Bay" matrix workflow designed for modern simulation rigs and power users.
 
-Universal Control Remapper is a Windows application which allows the end-user to remap any inputs from devices, such as keyboards, mice, joysticks, racing wheels, eye trackers, etc. to virtual output devices. Remapping is achieved by transforming inputs through plugins to a desired output device.
+UCR RELOADED is a Windows application that allows you to remap inputs from any combination of devices (keyboards, mice, joysticks, racing wheels, pedals, eye trackers, etc.) into unified virtual output devices, with automatic game-profile switching and built-in device hiding.
 
 <img src="Screenshot.png" align="center" />
 
-## Table of Contents ##
+## 🌟 Key Features
 
-- [Downloads](#downloads)
-- [Documentation](#documentation)
-- [Support / Discussion / Feedback](#support--discussion--feedback)
-- [Features](#features)
-- [Device support](#device-support)
-- [License](#license)
+*   **The Patch Bay**: A streamlined, flat mapping matrix that dynamically builds itself based on your selected output device (e.g., Xbox 360 controller). No more digging through deep profile trees to find your mappings.
+*   **Device Groups**: Combine multiple physical devices (like separate steering wheels, pedals, and shifters) into a single virtual "Group" to bind them together effortlessly.
+*   **Game Profiles & Auto-Switching**: Create custom control schemes tied to specific game executables (`.exe`). UCR automatically activates the correct profile when the game launches.
+*   **Integrated HidHide**: Stop games from getting confused by "double inputs" (seeing both your physical steering wheel and the virtual Xbox controller simultaneously). UCR can automatically hide specific hardware from the game per-profile.
+*   **Advanced Mergers & Filters**: Easily merge multiple buttons or axes onto a single output (e.g., dual sticks to one axis), add modifier filters ("shift states"), and tweak deadzones, anti-deadzones, and response curves.
+*   **Stable Device Identity**: Devices are tracked by their hardware IDs, meaning your mappings won't break if you plug your controller into a different USB port.
+*   **Virtual Keyboard Output**: Send genuine key presses directly to games that don't support custom virtual controller buttons.
 
+---
 
+## 📖 How to Use UCR RELOADED
 
-## Downloads ##
+### 1. Organizing Your Hardware (Devices Tab)
+When you first open UCR RELOADED, head to the **Devices** tab.
+- **Checkmarks**: Use the checkboxes to select the physical device you want to map from.
+- **Device Groups**: If your setup uses multiple USB devices (e.g., a wheel base on one USB, pedals on another), use the gear icon to open **Device Manager** and create a **Group**. You can then select this Group as your input scope, treating all those devices as one unified input source.
+- **Scope to Profile Association**: You can link your selected device or group directly to a specific Game Profile using the inline association button.
 
-The latest release of Universal Control Remapper can be [downloaded from GitHub](https://github.com/snoothy/ucr/releases) and with a number of basic plugins. Extra experimental or niche plugins can be found in the [UCR-Plugins repository](https://github.com/HidWizards/UCR-Plugins).
-You may also need to install other drivers etc, for example to allow creation of virtual Xbox or DirectInput controllers. See the [Providers page](https://github.com/Snoothy/UCR/wiki/Core-Providers) for details on these.
+### 2. Creating a Game Profile
+Instead of a complex tree of profiles, everything is managed via the **Toolbar**.
+- Click the profile chip at the top to create or edit a Game Profile.
+- Name your profile and link it to a game's executable (`.exe`). This ensures UCR only applies your bindings when that game is running.
+- **HidHide Integration**: In the Profile Editor, you can check boxes under "Hide Devices From Game" to make sure the game only sees your virtual controller, preventing conflicts.
 
-Test builds, patches, updated components, new or enhanced plugins etc., are often posted to the UCR channel in the HidWizards Discord server linked below. If you encounter any problems, it is best to check this channel for pinned patches.
+### 3. Binding Inputs (The Patch Bay)
+Once you have an active profile and an input scope selected, click the **Begin Mapping** button.
+- **The Matrix**: The Patch Bay will automatically generate a row for every possible input on your chosen output device (e.g., all buttons and axes for an Xbox 360 controller).
+- **Listen Mode**: Simply click the **Listen** button on any row and press the physical button or move the axis on your controller. UCR will instantly bind it.
+- **Merge Inputs (+1)**: If you click Listen on a row that is already bound, UCR automatically converts it into a Merger, allowing multiple physical buttons to trigger the same output.
 
+### 4. Advanced Tweaking (The ⋯ Panel)
+Every row in the Patch Bay has an **Advanced Panel (⋯)** for deep customization.
+- **Filters**: Assign modifier conditions (e.g., "Only trigger this button if Filter A is Active").
+- **Curves & Deadzones**: Adjust Response Curves, Deadzones, and Anti-Deadzones for precise axis control (essential for steering wheels and pedals).
+- **Half-Axis / Splitting**: If you need to separate or combine pedal inputs, use the axis properties in this panel.
 
+---
 
-## Documentation ##
+## 🛠 Device Support
 
-Documentation for Universal Control Remapper are hosted on GitHub at [https://github.com/snoothy/ucr/wiki](https://github.com/snoothy/ucr/wiki).
+UCR RELOADED supports a massive range of hardware through the integrated `IOWrapper` backend.
 
+**Inputs:**
+- DirectInput (Racing wheels, HOTAS, generic gamepads, etc.)
+- XInput (Xbox 360 / Xbox One controllers)
+- Keyboard & Mouse (via Interception)
+- Tobii Eye Trackers, DS4Windows API, MIDI devices, and more.
 
+**Outputs:**
+- Xbox 360 Controller (via ViGEm)
+- DualShock 4 Controller (via ViGEm)
+- DirectInput Controllers (via vJoy)
+- Virtual Keyboard (SendInput keystrokes)
 
-## Support / Discussion / Feedback
+## 💻 Building and Contributing
 
-Please **do not** use the UCR thread on the AutoHotkey forums. Either raise an issue on the [issue tracker](https://github.com/Snoothy/UCR/issues) or join us in the [HidWizards chat channel on Discord](https://discord.gg/MmnhQYQ)
+UCR RELOADED is built on .NET 8 WPF. 
 
+To build the project:
+1. Run `.\build.ps1 InitProject` from PowerShell to initialize dependencies and unpack the vendored IOWrapper.
+2. Ensure you have the .NET 8 SDK installed.
+3. Open `UCR.sln` in Visual Studio 2022 and build as normal.
 
+**Note:** If restoring NuGet packages fails, ensure you are building from a local drive (e.g., `C:\`) rather than a mapped network drive, as legacy `packages.config` restores can silently fail over network paths.
 
-## Features ##
+## 📄 License
 
-- Remap any number of inputs to any number of outputs on emulated output devices, with full analog support
-- Profiles and nesting allows for easy configuration 
-- Endless remapping potential through plugin extension support
-- Remapping and device order persists through reboots and unplugging of devices
-- Profiles can be switched by external programs through Command line parameters (CLI)
-- [HidGuardian](https://github.com/nefarius/ViGEm/tree/master/Sys/HidGuardian) support through HidCerberus for true HID remapping 
-- Remap your own, or unsupported, input/output devices through extension support for device providers
-- Uses no injection making it compatible with games using anti-tampering technologies, such as Denuvo
-
-
-
-## Device support ##
-
-UCR supports input and output devices through plugins using the [IOWrapper](https://github.com/evilC/IOWrapper) backend. UCR is released with standard plugins but can be extended with third party plugins to add additional device support.
-
-### Supported input ###
-
-- Xbox 360 controllers (XInput)
-- DirectInput controllers, includes gamepads, racing wheels, HOTAS, etc.
-- Keyboard (using [interception](https://github.com/oblitum/Interception))
-- Mouse (using [interception](https://github.com/oblitum/Interception))
-- Tobii Eye tracker
-
-### Supported output ###
-
-- Xbox 360 controller (XInput) (using [ViGEm](https://github.com/nefarius/ViGEm))
-- Dualshock 4 controller (using [ViGEm](https://github.com/nefarius/ViGEm))
-- DirectInput controller (using [vJoy](https://github.com/shauleiz/vJoy))
-- Keyboard (using [interception](https://github.com/oblitum/Interception))
-- Mouse (using [interception](https://github.com/oblitum/Interception))
-
-## Building and Contributing ##
-It is required to run the build script before building with Visual Studio. Run `.\build.ps1 InitProject` from powershell to initialize the required dependencies. All subsequent builds can be done from Visual Studio 2017.
-
-Please see  `CONTRIBUTING` when you've decided to contribute to Universal Control Remapper
-
-## License ##
-
-Universal Control Remapper is Open Source software and is released under the [MIT license](https://github.com/Snoothy/UCR/blob/master/LICENSE). 
+Universal Control Remapper RELOADED is Open Source software released under the [MIT license](https://github.com/Snoothy/UCR/blob/master/LICENSE).
