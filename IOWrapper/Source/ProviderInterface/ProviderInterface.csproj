@@ -41,6 +41,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Interfaces\IBindModeProvider.cs" />
+    <Compile Include="Interfaces\IFfbSinkProvider.cs" />
+    <Compile Include="Interfaces\IFfbSourceProvider.cs" />
     <Compile Include="Interfaces\IInputProvider.cs" />
     <Compile Include="Interfaces\IOutputProvider.cs" />
     <Compile Include="Interfaces\IProvider.cs" />

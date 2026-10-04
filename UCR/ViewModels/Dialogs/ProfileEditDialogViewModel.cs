@@ -4,7 +4,9 @@ using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
+using HidWizards.UCR.Core.Adapters;
 using HidWizards.UCR.Core.Models;
+using HidWizards.UCR.Core.Services;
 using HidWizards.UCR.Utilities.Commands;
 using HidWizards.UCR.ViewModels.Dashboard;
 using Microsoft.Win32;
@@ -41,6 +43,11 @@ namespace HidWizards.UCR.ViewModels.Dialogs
         }
 
         public ObservableCollection<ProfileApplicationRule> AutoActivateApplications { get; }
+
+        // Physical devices HidHide hides from other applications (the game) while this profile is
+        // active, so the game only sees UCR's virtual output. See HidHideProfileService.
+        public ObservableCollection<HiddenDeviceChoiceViewModel> HiddenDeviceChoices { get; }
+        public string HidHideStatusText { get; }
 
         private ProfileApplicationRule _selectedApplicationRule;
         public ProfileApplicationRule SelectedApplicationRule
@@ -98,6 +105,10 @@ namespace HidWizards.UCR.ViewModels.Dialogs
             _profile = profile;
             _profileName = profile.Title;
             AutoActivateApplications = new ObservableCollection<ProfileApplicationRule>(profile.AutoActivateApplications);
+            HiddenDeviceChoices = BuildHiddenDeviceChoices(profile);
+            HidHideStatusText = new HidHideDriverAdapter().IsInstalled
+                ? "Ticked devices are hidden from the game while this profile is active. Start UCR's profile before launching the game."
+                : "HidHide is not installed, so nothing will be hidden yet. Your choices are still saved with the profile.";
             // "ProfileEditNestedDialogHost" (not the default "RootDialog"): this whole dialog is
             // itself shown on "RootDialog", which can only have one dialog open at a time — see
             // ProfileEditDialog.xaml's nested DialogHost for why it has to be a sibling, not this
@@ -130,6 +141,16 @@ namespace HidWizards.UCR.ViewModels.Dialogs
             OutputDeviceControlViewModel.Dispose();
         }
 
+        private ObservableCollection<HiddenDeviceChoiceViewModel> BuildHiddenDeviceChoices(Profile profile)
+        {
+            var devicesManager = profile.Context?.DevicesManager;
+            var connected = devicesManager?.GetVisibleDeviceList(DeviceIoType.Input) ?? new System.Collections.Generic.List<Device>();
+            Func<Device, string> titleOf = device => devicesManager?.GetDisplayTitle(device) ?? device.DisplayTitle;
+            var choices = HiddenDeviceCatalog.Build(connected, titleOf, profile.HiddenDevices);
+            return new ObservableCollection<HiddenDeviceChoiceViewModel>(
+                choices.Select(choice => new HiddenDeviceChoiceViewModel(choice, () => IsDirty = true)));
+        }
+
         public void SaveToProfile()
         {
             if (_profileName != _profile.Title)
@@ -143,6 +164,12 @@ namespace HidWizards.UCR.ViewModels.Dialogs
             {
                 _profile.AutoActivateApplications.Add(rule);
             }
+
+            _profile.HiddenDevices = HiddenDeviceChoices
+                .Where(choice => choice.IsSelected)
+                .Select(choice => new HiddenDevice(choice.InstanceId, choice.DisplayName))
+                .ToList();
+            _profile.Context?.ContextChanged();
         }
 
         private void ExecuteClone(object parameter)

@@ -28,6 +28,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <TextBlock Text="Edit Profile" Style="{DynamicResource MaterialDesignHeadline6TextBlock}" Margin="0 0 0 16" />
@@ -110,8 +111,26 @@
             </Grid>
         </GroupBox>
 
+        <!-- Hide from game (HidHide): per-profile, applied when this profile activates. -->
+        <GroupBox Header="Hide Devices From Game (HidHide)" Grid.Row="4" Style="{DynamicResource MaterialDesignCardGroupBox}" Margin="0 0 0 16">
+            <StackPanel>
+                <TextBlock Text="{Binding HidHideStatusText}" TextWrapping="Wrap" Margin="0 0 0 8"
+                           Foreground="{DynamicResource MaterialDesignBody}" />
+                <ListBox ItemsSource="{Binding HiddenDeviceChoices}" MinHeight="60" MaxHeight="140"
+                         Background="{DynamicResource MaterialDesignPaper}"
+                         Foreground="{DynamicResource MaterialDesignBody}"
+                         BorderBrush="{DynamicResource MaterialDesignDivider}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" Content="{Binding Label}" />
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </StackPanel>
+        </GroupBox>
+
         <!-- Actions -->
-        <GroupBox Header="Actions" Grid.Row="4" Style="{DynamicResource MaterialDesignCardGroupBox}" Margin="0 0 0 16">
+        <GroupBox Header="Actions" Grid.Row="5" Style="{DynamicResource MaterialDesignCardGroupBox}" Margin="0 0 0 16">
             <WrapPanel Orientation="Horizontal" Margin="0 8 0 0">
                 <Button Style="{StaticResource MaterialDesignRaisedButton}" Content="CLONE" Command="{Binding CloneCommand}" Margin="0 0 8 8" />
                 <Button Style="{StaticResource MaterialDesignRaisedButton}" Content="ADD CHILD" Command="{Binding AddChildCommand}" Margin="0 0 8 8" />
@@ -122,7 +141,7 @@
         </GroupBox>
 
         <!-- Dialog Controls -->
-        <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Grid.Row="5" Margin="0 16 0 0">
+        <StackPanel HorizontalAlignment="Right" Orientation="Horizontal" Grid.Row="6" Margin="0 16 0 0">
             <Button IsDefault="True" 
                     Command="{x:Static wpf:DialogHost.CloseDialogCommand}" 
                     Content="SAVE">

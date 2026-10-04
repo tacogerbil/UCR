@@ -99,6 +99,10 @@ namespace TestApp
 
             //xInputPad_1.Unsubscribe();
 
+            #region FFB Probe (vJoy -> physical device passthrough plan, see plan doc)
+            //var ffbProbe = new FfbProbeTester();
+            #endregion
+
             Console.WriteLine("Press Enter to exit");
             Console.ReadLine();
             IOW.Instance.Dispose();

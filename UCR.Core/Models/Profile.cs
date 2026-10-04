@@ -29,6 +29,9 @@ namespace HidWizards.UCR.Core.Models
         public List<DeviceConfiguration> InputDeviceConfigurations { get; set; }
         public List<DeviceConfiguration> OutputDeviceConfigurations { get; set; }
 
+        /// <summary>Physical devices HidHide hides from other applications while this profile is active.</summary>
+        public List<HiddenDevice> HiddenDevices { get; set; }
+
         private bool _autoActivateEnabled;
         private string _autoActivateExecutable;
         private ObservableCollection<ProfileApplicationRule> _autoActivateApplications;
@@ -106,6 +109,7 @@ namespace HidWizards.UCR.Core.Models
             Mappings = new List<Mapping>();
             InputDeviceConfigurations = new List<DeviceConfiguration>();
             OutputDeviceConfigurations = new List<DeviceConfiguration>();
+            HiddenDevices = new List<HiddenDevice>();
             AutoActivateApplications = new ObservableCollection<ProfileApplicationRule>();
         }
 

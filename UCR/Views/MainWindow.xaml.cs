@@ -47,6 +47,7 @@ namespace HidWizards.UCR.Views
         private Forms.NotifyIcon _trayIcon;
         private Forms.ToolStripMenuItem _stopCurrentProfileMenuItem;
         private readonly AutoProfileMonitor _autoProfileMonitor;
+        private readonly HidHideProfileActivator _hidHideProfileActivator;
         private bool _exitRequested;
         private DispatcherTimer _deviceChangeDebounceTimer;
         enum CloseState
@@ -97,6 +98,7 @@ namespace HidWizards.UCR.Views
             };
             
             InitializeTrayIcon();
+            _hidHideProfileActivator = new HidHideProfileActivator(context);
             _autoProfileMonitor = new AutoProfileMonitor(context);
         }
 
@@ -209,12 +211,14 @@ namespace HidWizards.UCR.Views
         internal void PrepareForShutdown()
         {
             _autoProfileMonitor?.Dispose();
+            _hidHideProfileActivator?.Dispose();
             if (_trayIcon != null) _trayIcon.Visible = false;
         }
 
         protected override void OnClosed(EventArgs e)
         {
             _autoProfileMonitor?.Dispose();
+            _hidHideProfileActivator?.Dispose();
 
             if (_trayIcon != null)
             {

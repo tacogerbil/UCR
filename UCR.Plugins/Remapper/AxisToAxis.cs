@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Reflection;
 using HidWizards.UCR.Core.Attributes;
 using HidWizards.UCR.Core.Models;
@@ -41,15 +41,23 @@ namespace HidWizards.UCR.Plugins.Remapper
         [PluginGui("Percentage", Group = "Sensitivity")]
         public int Sensitivity { get; set; }
 
+        // 100 = off. Below 100 boosts small deflections / flattens large ones, to counter a game that
+        // already ramps steering up aggressively toward full lock. Pivots on axis center, so leave at 100
+        // for unipolar pedal axes.
+        [PluginGui("Response curve %", Group = "Sensitivity", Order = 2)]
+        public int ResponseCurve { get; set; }
+
         private readonly DeadZoneHelper _deadZoneHelper = new DeadZoneHelper();
         private readonly AntiDeadZoneHelper _antiDeadZoneHelper = new AntiDeadZoneHelper();
         private readonly SensitivityHelper _sensitivityHelper = new SensitivityHelper();
+        private readonly ResponseCurveHelper _responseCurveHelper = new ResponseCurveHelper();
 
         public AxisToAxis()
         {
             DeadZone = 0;
             AntiDeadZone = 0;
             Sensitivity = 100;
+            ResponseCurve = ResponseCurveHelper.LinearPercentage;
         }
 
         public override void InitializeCacheValues()
@@ -65,6 +73,7 @@ namespace HidWizards.UCR.Plugins.Remapper
             if (DeadZone != 0) value = _deadZoneHelper.ApplyRangeDeadZone(value);
             if (AntiDeadZone != 0) value = _antiDeadZoneHelper.ApplyRangeAntiDeadZone(value);
             if (Sensitivity != 100) value = _sensitivityHelper.ApplyRangeSensitivity(value);
+            if (ResponseCurve != ResponseCurveHelper.LinearPercentage) value = _responseCurveHelper.Apply(value);
             WriteOutput(0, value);
         }
 
@@ -74,6 +83,7 @@ namespace HidWizards.UCR.Plugins.Remapper
             _antiDeadZoneHelper.Percentage = AntiDeadZone;
             _sensitivityHelper.Percentage = Sensitivity;
             _sensitivityHelper.IsLinear = Linear;
+            _responseCurveHelper.Percentage = ResponseCurve;
         }
 
         public override PropertyValidationResult Validate(PropertyInfo propertyInfo, dynamic value)
@@ -83,6 +93,8 @@ namespace HidWizards.UCR.Plugins.Remapper
                 case nameof(DeadZone):
                 case nameof(AntiDeadZone):
                     return InputValidation.ValidatePercentage(value);
+                case nameof(ResponseCurve):
+                    return InputValidation.ValidateRange(value, ResponseCurveHelper.MinPercentage, ResponseCurveHelper.MaxPercentage);
             }
             
             return PropertyValidationResult.ValidResult;
