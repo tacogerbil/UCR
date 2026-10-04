@@ -66,6 +66,13 @@ UCR RELOADED supports a massive range of hardware through the integrated `IOWrap
 - DirectInput Controllers (via vJoy)
 - Virtual Keyboard (SendInput keystrokes)
 
+### External Software & Drivers
+Some of UCR's features rely on third-party drivers being installed on your system:
+- **[HidHide](https://github.com/nefarius/HidHide)**: Required for the "Hide Devices From Game" feature to function. It is a kernel driver that blocks games from seeing your physical hardware, preventing double-input issues.
+- **[ViGEmBus](https://github.com/nefarius/ViGEmBus)**: Required to create virtual Xbox 360 and DualShock 4 output controllers.
+- **[vJoy](https://github.com/shauleiz/vJoy)**: Required to create virtual DirectInput output controllers.
+- **[Interception](https://github.com/oblitum/Interception)**: Required if you intend to map physical keyboard or mouse inputs/outputs via the `Core_Interception` plugin.
+
 ## 💻 Building and Contributing
 
 UCR RELOADED is built on .NET 8 WPF. 
